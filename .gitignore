@@ -1,0 +1,36 @@
+# secrets
+.env
+
+# large / third-party (download with scripts/, see data/README.md)
+data/*
+!data/README.md
+external/
+
+# caches and run artefacts (metrics.json and CSV summaries ARE committed)
+results/llm_cache.sqlite
+results/**/step9_original.csv
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# local GPU runs (scripts/run_local.ps1)
+results_smoke/
+results/Outputs/
+results/reader_lora/
+*.sqlite
+*.zip
+
+# student data must never be pushed: transcripts of student work and judge outputs quoting them
+**/Outputs/
+results/**/step10_rechecked.csv
+results/**/step12_taxonomy.csv
+results/**/step9_original.csv
+results/**/claims.jsonl
+results/**/ledger.jsonl
+results/**/rereads.jsonl
+step9_normalized.csv
+# large artefacts (GitHub limit 100 MB/file): trained adapter, duplicates
+**/reader_lora/
+local_results/
+results/pc_run/results/results_smoke/
+results/**/logs/

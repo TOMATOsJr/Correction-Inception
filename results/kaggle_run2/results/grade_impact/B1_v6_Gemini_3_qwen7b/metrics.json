@@ -1,0 +1,32 @@
+{
+  "name": "B1_v6_Gemini_3_qwen7b",
+  "grader": "hf-text:Qwen/Qwen2.5-7B-Instruct",
+  "target": "/kaggle/input/datasets/sampathravikanti/edu-text/edu_data/Observationset_Final/v6_Gemini_3 :: gemini-3-pro-preview",
+  "n_samples": 281,
+  "n_codes": 1405,
+  "grading_failures": 12,
+  "code_level": {
+    "TCE_rate_percent": 16.37,
+    "wrongful_deduction_percent": 9.89,
+    "over_credit_percent": 6.48,
+    "TCE_95CI_student_bootstrap": [
+      12.84,
+      19.91
+    ]
+  },
+  "sample_level": {
+    "TCE_rate_percent": 45.2,
+    "with_wrongful_deduction_percent": 27.05,
+    "with_over_credit_percent": 23.13,
+    "TCE_95CI_student_bootstrap": [
+      37.06,
+      52.86
+    ]
+  },
+  "score_MAE_target_vs_gold": 0.0149,
+  "grader_validity_gold_vs_TA": {
+    "code_exact_agreement_percent": 71.1,
+    "score_MAE": 0.0292
+  },
+  "grader_noise_floor_code_flip_percent": 6.9
+}

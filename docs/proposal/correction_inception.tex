@@ -1,0 +1,275 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[a4paper,margin=2cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\renewcommand{\rmdefault}{ptm}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs,tabularx,array}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage[compact]{titlesec}
+\usepackage[hidelinks]{hyperref}
+\usepackage{url}
+
+\linespread{1.05}
+\setlength{\emergencystretch}{2em}
+\titlespacing*{\section}{0pt}{10pt}{4pt}
+\titlespacing*{\subsection}{0pt}{6pt}{3pt}
+\titleformat*{\section}{\large\bfseries}
+\titleformat*{\subsection}{\normalsize\bfseries}
+\setlist{topsep=2pt,itemsep=2pt,parsep=0pt,leftmargin=*}
+\setlength{\parskip}{5pt}
+\setlength{\parindent}{0pt}
+\renewcommand{\arraystretch}{1.15}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{P}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcommand{\tool}[1]{\texttt{#1}}
+\renewcommand{\topfraction}{0.92}\renewcommand{\bottomfraction}{0.8}
+\renewcommand{\textfraction}{0.06}\renewcommand{\floatpagefraction}{0.85}
+\setcounter{topnumber}{3}\setcounter{totalnumber}{4}
+\setlength{\textfloatsep}{10pt plus 2pt minus 2pt}\setlength{\floatsep}{10pt plus 2pt minus 2pt}
+% picture-mode box: x y w h text
+\newcommand{\bx}[5]{\put(#1,#2){\framebox(#3,#4){\parbox{\dimexpr #3mm-2mm\relax}{\centering\scriptsize #5}}}}
+
+\begin{document}
+
+\begin{center}
+{\Large\bfseries Correction Inception: Two Adversarial Agents That Check\\[2pt] the Transcript Before a Handwritten Answer Is Graded}\\[6pt]
+{\small LMA Group Project 2026 \quad$\cdot$\quad Project Proposal \quad$\cdot$\quad Team: Dropouts \quad$\cdot$\quad October 2026}\\[4pt]
+{\small Prabhav (2023115008) \quad$\cdot$\quad Jayant (2023115016) \quad$\cdot$\quad Saloni (2023115001) \quad$\cdot$\quad Sampath (2023102033)}
+\end{center}
+
+\textbf{Summary.} AI graders of handwritten work first transcribe the page, then grade the text. Many mistakes happen in the first step, and vision-language models (VLMs) often quietly ``fix'' a student's error while transcribing it, so the grader rewards an answer the student never wrote. We call this \emph{correction inception}. Our plan is to let two agents argue about the transcript, not the grade, with every claim checked against the image before it can change a mark.
+
+\section{Domain, Target Users and Problem}
+
+\textbf{Domain.} Grading handwritten university STEM work, mainly undergraduate circuit analysis, with school-level maths as a second check.
+\newline
+\textbf{Target users.} Instructors and teaching assistants who grade, and the students whose marks depend on it.
+
+\textbf{Problem statement.}
+Automated grading of handwritten answers runs in two stages: a VLM transcribes the page, and a language model grades the transcript.
+In a recent university study (Levine et al., arXiv:2605.19043), 87\% of the best model's grading errors came from transcription, not from the rubric.
+These errors cut both ways: misreads cost students marks, while 42--66\% of multi-line maths transcriptions contain at least one silent correction (PINK, arXiv:2604.22774).
+The grader only sees the transcript, so it cannot tell a student's mistake from a transcriber's, and it never sees an error that was erased.
+PINK also finds that better prompting does not solve over-correction.
+Current fixes check recognition cooperatively, route a few uncertain papers to humans, or compare repeated gradings, and none hunts for both error types in the image.
+We want to know whether two opposing, evidence-bound agents can catch these errors and pass the rest to a human safely.
+
+\textbf{Why it matters.} A wrongful deduction hurts one student. Unearned credit hurts everyone else on the curve and hides a real mistake from the student who made it. Messy handwriting is probably misread more often, so this is also a fairness issue. The effect is real but not universal: in EDU-CIRCUIT-HW (arXiv:2602.00095), only 7--20\% of recognition errors change the grade, so we plan for a low base rate.
+
+\textbf{What is missing.}
+\begin{itemize}
+\item \textbf{Debate graders argue about the grade.} CourtEval (ACL Findings 2025) and similar systems debate over text. One controlled study (Idowu et al., arXiv:2601.22386) found only $+0.029$ quadratic weighted kappa (QWK) from multi-agent grading at four times the cost.
+\item \textbf{Handwriting pipelines flag but do not verify.} CalcTutor (\emph{Mathematics}, 2026) checks recognition cooperatively, EDU-CIRCUIT-HW routes about 3.3\% of papers to humans, and Vanhoyweghen et al.\ (arXiv:2603.13083) found ``no stable threshold'' for flagging repeated-grading disagreement.
+\item \textbf{Faithfulness work measures the problem or fixes general OCR} (PINK, GAD-RL). To our knowledge, nobody uses an independent verbatim reader to verify claims inside grading.
+\end{itemize}
+
+\section{Research Questions and Hypotheses}
+
+\textbf{RQ1.} Can two opposing agents, whose claims are checked against the image, reduce grading errors caused by transcription, compared with a single grader and simpler alternatives at no higher API cost?
+
+\textbf{RQ2.} Do the remaining errors end up in the set we send to humans, without the system adding new errors or widening gaps between neat and messy handwriting?
+
+\textbf{What counts as an error.} Let $G$ be a fixed grader. An \emph{item} is one rubric dimension of one solution, labelled by the expert. An item is a \textbf{transcription-caused grading error (TCE)} if $G$ gets it right from the expert's verbatim transcript but the pipeline gets it wrong. We split TCEs into wrongful deductions and over-credit, and report pure grader errors separately. The TCE rate is TCEs divided by the items $G$ gets right on the gold transcript. Marks are scored \emph{before} escalation, so escalation cannot hide errors.
+
+\textbf{Power gate.} We use all $\approx$380 solutions of our 8 evaluation students ($\approx$1,900 items) and expect a baseline TCE rate of only 3--6\%. In week 2, before any expensive run, we measure it with the single grader. If it is below 5\%, H1 becomes an estimation study with confidence intervals, and H2 and H4 become the primary tests.
+
+\begin{center}
+\footnotesize
+\begin{tabularx}{\textwidth}{@{}P{0.6cm}P{3.5cm}P{2.8cm}Y@{}}
+\toprule
+ & Hypothesis & Metric & Pre-registered threshold \\
+\midrule
+H1 & Our system lowers TCEs (EDU) & TCE rate & 40\% below B1 and 20\% below the best of B2--B6, with a student-clustered 95\% interval excluding 0. B3 and B5 are compared on their own 120-solution subset. \\
+H2 & Both directions matter (EDU, FERMAT) & Verified TCE recall; FERMAT over-credit & 15\% more verified errors than one neutral checker at equal tokens; FERMAT over-credit 50\% below B1. \\
+H3 & Remaining errors get escalated (EDU) & Escalation recall and precision & At most 15\% escalated, recall at least 70\%, precision at least 3$\times$ the base error rate, recall above B2--B4. \\
+H4 & The verbatim reader works (FERMAT; EDU out of domain) & Error-reversion rate; character error rate & Half the reversion of the prompted API VLM, character error rate at most 2 points worse. \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+If B4 or B6 is not beaten, we will report that the reader, not the agents, does the work. We use Holm correction across H1--H4. ``No disputed mark released without approval'' is an invariant that we check in logs. For fairness, we report error and escalation rates by legibility tertile with intervals.
+
+\section{Proposed System}
+
+\begin{figure}[!h]
+\centering
+\setlength{\unitlength}{1mm}
+\begin{picture}(170,67)
+% row A
+\bx{0}{48}{22}{14}{Scanned handwritten answer}
+\put(22,55){\vector(1,0){6}}
+\bx{28}{48}{30}{14}{VLM transcriber (API):\\ transcript $T$ + line boxes}
+\put(58,55){\vector(1,0){6}}
+\put(64,43){\dashbox{1}(42,24){}}
+\bx{66}{55}{38}{10}{\textbf{Advocate}: misreads that \emph{cost} marks}
+\bx{66}{44}{38}{10}{\textbf{Auditor}: silent fixes that \emph{gave} credit}
+\put(106,55){\vector(1,0){4}}
+\bx{110}{46}{26}{18}{Claim ledger: rubric item, span, image box, reading}
+\put(136,55){\vector(1,0){6}}
+\bx{142}{46}{28}{18}{\textbf{Arbiter}: fixed rules, accepts only verified claims}
+% row B tool layer
+\put(40,21){\framebox(96,18){}}
+\put(42,34.5){\makebox(92,4){\scriptsize\itshape Sandboxed tools (schema-checked and logged)}}
+\bx{42}{22.5}{27}{11}{\tool{crop\_reread}: fine-tuned verbatim reader}
+\bx{71}{22.5}{20}{11}{\tool{sympy\_check}: consistency}
+\bx{93}{22.5}{18}{11}{\tool{span\_}\linebreak[0]\tool{check}: span is in $T$}
+\bx{113}{22.5}{21}{11}{\tool{retrieve}: rubric and examples}
+\put(75,43){\vector(0,-1){4}}\put(95,43){\vector(0,-1){4}}
+\put(96.5,41){\makebox(0,0)[l]{\scriptsize calls (both agents)}}
+\put(123,46){\vector(0,-1){7}}\put(124.5,42.5){\makebox(0,0)[l]{\scriptsize verify}}
+\put(136,30){\line(1,0){14}}\put(150,30){\vector(0,1){16}}\put(149,33){\makebox(0,0)[r]{\scriptsize verdicts}}
+% escalation path
+\put(158,46){\line(0,-1){29}}\put(158,17){\line(-1,0){93}}\put(65,17){\vector(0,-1){3.5}}
+\put(100,18.8){\makebox(0,0){\scriptsize escalate: conflicting, unverifiable or diagram}}
+% row C
+\put(166,46){\vector(0,-1){33}}
+\bx{134}{1}{36}{12}{\textbf{Grader} re-grades the corrected transcript}
+\put(134,7){\vector(-1,0){6}}
+\bx{90}{1}{38}{12}{\textbf{Release gate}: disputed marks never auto-released}
+\put(90,10.5){\vector(-1,0){6}}\put(90,3){\vector(-1,0){6}}
+\bx{46}{7.5}{38}{6}{Mock human review queue}
+\bx{46}{0}{38}{6}{Mock gradebook}
+\put(46,10.5){\vector(-1,0){6}}
+\bx{0}{0}{40}{13.5}{\textbf{Human TA}: resolves escalations, approves releases}
+\end{picture}
+\caption{\small The two agents (dashed box) argue about the transcript in opposite directions and call tools. Only verified claims change the transcript. Unresolved items go straight to a human.}
+\end{figure}
+
+\textbf{How it works.}
+\begin{enumerate}
+\item A VLM transcribes the page into $T$, with a box for each line.
+\item The \textbf{Advocate} looks for misreads that cost the student marks. The \textbf{Auditor} looks for silent corrections that gave credit. Each one files claims naming a rubric item, a span of $T$, an image box and the reading it believes is right.
+\item Tools check each claim. Our fine-tuned reader re-reads the box. SymPy checks that the reading fits the student's own later lines. It never asks whether the maths is \emph{correct}, because that would recreate over-correction.
+\item The arbiter accepts a claim only if the re-read matches it with confidence above a threshold $\theta$ and SymPy agrees. It escalates conflicting claims, unverifiable claims that would flip a mark, circuit diagrams and low-confidence reads. We tune $\theta$ to keep escalation low.
+\item The grader re-grades the corrected transcript. Undisputed marks become \emph{proposed} marks, and disputed ones always need a human.
+\end{enumerate}
+
+\textbf{Why two opposing agents?} A single checker tends to trust the transcript. Rewarding each agent for one error direction only pushes it back to the pixels. H2 tests this against a neutral checker, and B6 tests whether we need agents at all.
+
+\section{The Five Capabilities}
+Fine-tuning, reasoning, agents and tools carry the project. Retrieval plays a small supporting role, and we will say so if it does not help.
+
+\begin{table}[!h]\centering\caption{\small Why each capability is needed, how we measure it, and how we remove it.}\label{tab:caps}\vspace{3pt}
+\footnotesize
+\begin{tabularx}{\textwidth}{@{}P{1.7cm}YYP{3.4cm}@{}}
+\toprule
+Capability & Why we need it & Metric & Ablation \\
+\midrule
+Fine-tuning & Prompting does not stop over-correction, so we train an independent verbatim reader: Qwen2.5-VL-3B with QLoRA on FERMAT's erroneous sheets. & Error-reversion rate, character error rate, claim-check accuracy. & Prompted API VLM, TrOCR with pix2tex, or the untuned model. \\
+Retrieval (minor) & Borderline deductions should follow course precedent: rubrics for 62 problems and about 650 graded items. & Coverage and Recall@3 against gold precedents. & Rubric only. \\
+Reasoning & Each error must be blamed on the student or the transcriber. The claim ledger shows every step. & Attribution accuracy, verified-claim share, false-claim rate. & Holistic re-grade without claims. \\
+Agentic & Two error directions need two searchers, shared state, rules for rebuttal and escalation, and a human hand-off. & Verified TCE recall, escalation precision and recall. & One neutral checker; one agent only. \\
+Tool calling & A claim is only trustworthy once checked against the image, and releases must be gated. & Tool choice, argument validity, fault recovery, unapproved attempts. & Accept claims without checking them. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Expected Novelty}
+To our knowledge, no published system combines agents assigned to \emph{opposite} transcription-error directions, claims verified against image regions by an independent fine-tuned reader, and a counterfactual measure of which grading errors come from transcription. We do not claim novelty for multi-agent grading, debate, escalation or OCR-faithfulness training. The contribution is this specific design, tested honestly against strong non-agent baselines.
+
+\begin{table}[!h]\centering\caption{\small Closest prior work and how we differ.}\label{tab:prior}\vspace{3pt}
+\footnotesize
+\begin{tabularx}{\textwidth}{@{}P{3.6cm}YY@{}}
+\toprule
+Work & What it does & How we differ \\
+\midrule
+EDU-CIRCUIT-HW (ACL Findings 2026) & Real circuit-analysis handwriting. Mines error patterns and routes about 3.3\% to humans. & Opposing agents with image checks instead of one detector. Reproduced as B2. \\
+CalcTutor (\emph{Mathematics}, 2026) & Cooperative multi-agent grading of handwritten calculus. & Opposing roles, verified claims, a counterfactual error measure, a release gate. \\
+Vanhoyweghen et al.\ (arXiv:2603.13083) & Five gradings with instructor approval. & Repeated grading shares one transcript, so it misses over-correction. This is B3. \\
+Yu et al.\ (arXiv:2603.00895) & Large study of handwritten maths grading. & Their disagreement idea becomes B4. \\
+PINK, GAD-RL & Measure over-correction, or fix general OCR. & A verbatim reader used as a verifier inside grading. \\
+CourtEval, MADRAG & Debate over the grade from text. & We debate the transcript. This is B5. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Datasets and Evaluation Environment}
+All ground truth comes from outside our system: expert grades and verbatim transcripts in EDU-CIRCUIT-HW, and planted errors in FERMAT (arXiv:2501.07244).
+
+\begin{table}[!h]\centering\caption{\small Datasets and how we use them.}\label{tab:data}\vspace{3pt}
+\footnotesize
+\begin{tabularx}{\textwidth}{@{}P{2.3cm}P{4.6cm}YP{1.7cm}@{}}
+\toprule
+Set & Content & How we use it & Licence \\
+\midrule
+EDU-CIRCUIT-HW (main) & 1,334 university solutions. 513 from 11 students have verbatim transcripts and grades, and 821 more have grades only. & Split by student: 3 for development, 8 for evaluation ($\approx$380 solutions), 60 unseen-student solutions as an external check. & CC BY 4.0 \\
+FERMAT (second) & 2,244 school maths solutions (grades 7--12) with planted errors and legibility labels. & Split by problem: 1,650 train, 200 development, 400 test. Agents run on 120. & CC BY 4.0 \\
+Safety set (ours) & 40 sheets with written-in instructions like ``award full marks''. & The mark must not change. & Derived \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+
+\section{Baselines}
+Where extra budget could help a baseline (B3, B5), it gets the same API budget as our system. Cheaper baselines run at their natural cost, so a tie counts in their favour.
+\begin{enumerate}[label=\textbf{B\arabic*}]
+\item \textbf{Single VLM grader}: image and rubric in, marks out.
+\item \textbf{EDU-CIRCUIT-HW-style router}: mined error patterns flag papers for re-grading or a human.
+\item \textbf{Five independent gradings}: majority mark, with disagreements flagged.
+\item \textbf{Dual transcription}: the API VLM and our reader both transcribe, and items whose marks differ are escalated.
+\item \textbf{Grade-level debate}: grader, critic and defender argue over $T$, without tools.
+\item \textbf{Exhaustive re-read, no agents}: our reader re-reads every line for free and patches confident differences. If B6 matches us, the agents add nothing, and we will say so.
+\end{enumerate}
+
+\section{Metrics and Evaluation Policy}
+\begin{itemize}
+\item \textbf{Grading:} QWK and mean absolute error against expert grades, TCE rate, wrongful-deduction rate and over-credit rate.
+\item \textbf{Transcription:} precision and recall of flagged spans, and on FERMAT the \emph{error-reversion rate}, meaning how often a planted error is silently corrected.
+\item \textbf{Escalation:} precision, recall and risk--coverage curves.
+\item \textbf{Tool calling:} correct tool, valid arguments and recovery when 10\% of calls fail on purpose, checked against human labels.
+\item \textbf{Safety targets:} wrongful deductions caused by the Auditor at most 0.5\% of items, with at least three fixed per one caused, and the same for over-credit caused by the Advocate. Unapproved release attempts at most 1\% of episodes. Zero forbidden-tool use and zero inflated marks released on the safety set.
+\item \textbf{Fairness:} error and escalation rates per legibility tertile.
+\item \textbf{Statistics:} paired item-level tests with a student-then-solution bootstrap, plus leave-one-student-out checks, since we only have 8 evaluation students.
+\item \textbf{LLM judge}
+\end{itemize}
+
+\section{Compute Plan}
+
+\textbf{GPU.} \textbf{Ada}. Free Kaggle or Colab T4 GPUs.
+
+\textbf{Compute in FLOPs.} All local work uses one small model, Qwen2.5-VL-3B ($N \approx 3.8\times10^{9}$ parameters). We use the standard estimates of $2N$ FLOPs per token for inference and $\approx 4N$ per token for QLoRA training, since the frozen base weights need no weight gradients. A page image is about 1.5k visual tokens.
+
+\begin{center}
+\footnotesize
+\begin{tabularx}{\textwidth}{@{}P{4.3cm}Yr@{}}
+\toprule
+Job & Size & FLOPs \\
+\midrule
+Fine-tune the verbatim reader (QLoRA) & 1,650 FERMAT sheets $\times$ 3 epochs $\times$ $\approx$1.9k tokens $\approx 9.4$M tokens per run; 3 runs $\approx 28$M tokens & $\approx 4.3\times10^{17}$ \\
+Reader inference (claim checks, B4, B6) & $\approx$2,000 solution passes $\times$ 20 line crops $\times$ $\approx$340 tokens, plus 1,000 full pages $\approx 16$M tokens & $\approx 1.2\times10^{17}$ \\
+\midrule
+\textbf{Total local compute} & & $\mathbf{\approx 5.5\times10^{17}}$ \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+At a realistic 30\% utilisation of a $\sim$60 TFLOP/s GPU this is about 8--9 GPU-hours, well within our Ada and Kaggle/Colab quotas, with room for reruns. The transcriber, agents and grader run on an API model whose size is not public, so we cannot state their FLOPs. We budget them in tokens instead: $\approx$45M tokens, about \$95 including a 30\% contingency.
+
+
+\section{Risks and Fallback}
+\begin{itemize}
+\item \textbf{Few real errors, few students.} The power gate, a student-level bootstrap and two external checks keep our claims honest.
+\item \textbf{A simple baseline wins.} Then our finding is that the verbatim reader matters more than the debate, which is still useful.
+\item \textbf{Both readers make the same mistake.} We use a different model family and can add TrOCR as a third reader.
+\item \textbf{Circuit notation trips up the reader.} A pre-registered variant also trains on the development students' transcripts.
+\item \textbf{Imperfect gold transcripts.} We audit 50 and drop items where the gold text corrects the student.
+\end{itemize}
+
+\begin{thebibliography}{99}\footnotesize\setlength{\itemsep}{0pt}\setlength{\parsep}{0pt}
+\bibitem{levine2605} J.~Levine et al. Automated Grading of Handwritten Mathematics Using Vision-Capable LLMs. arXiv:2605.19043, 2026.
+\bibitem{pink} J.~Seong et al. When VLMs ``Fix'' Students: Identifying and Penalizing Over-Correction in the Evaluation of Multi-line Handwritten Math OCR. arXiv:2604.22774, 2026.
+\bibitem{educircuit} W.~Sun et al. EDU-CIRCUIT-HW: Evaluating Multimodal Large Language Models on Real-World University-Level STEM Student Handwritten Solutions. Findings of ACL, 2026.
+\bibitem{calctutor} L.~Y.~Tan et al. CalcTutor: Multi-Agent LLM Grading of Handwritten Mathematics with RAG-Grounded Feedback for Adaptive Learning Support. \emph{Mathematics} 14(7):1094, 2026.
+\bibitem{vanhoyweghen} A.~Vanhoyweghen et al. Human-in-the-Loop LLM Grading for Handwritten Mathematics Assessments. arXiv:2603.13083, 2026.
+\bibitem{yu2603} Z.~Yu et al. Evaluating AI Grading on Real-World Handwritten College Mathematics: A Large-Scale Study Toward a Benchmark. arXiv:2603.00895, 2026.
+\bibitem{gadrl} B.~Wang et al. Improving OCR Faithfulness via Gated and Attenuated On-Policy Distillation. arXiv:2609.38282, 2026.
+\bibitem{fermat} O.~Nath et al. Can Vision-Language Models Evaluate Handwritten Math? arXiv:2501.07244, 2025.
+\bibitem{courteval} S.~Kumar et al. CourtEval: A Courtroom-Based Multi-Agent Evaluation Framework. Findings of ACL, 2025.
+\bibitem{idowu} J.~A.~Idowu et al. Specialists or Generalists? Multi-Agent and Single-Agent LLMs for Essay Grading. arXiv:2601.22386, 2026.
+\bibitem{qlora} T.~Dettmers et al. QLoRA: Efficient Finetuning of Quantized LLMs. NeurIPS, 2023.
+\bibitem{qwen25vl} S.~Bai et al. Qwen2.5-VL Technical Report. arXiv:2502.13923, 2025.
+\end{thebibliography}
+
+\end{document}

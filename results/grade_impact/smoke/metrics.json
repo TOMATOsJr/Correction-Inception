@@ -1,0 +1,32 @@
+{
+  "name": "smoke",
+  "grader": "gemini-3.5-flash",
+  "target": "D:/lma/data/EDU-CIRCUIT-HW_v1/Observationset_Final/v6_Gemini_2p5 :: gemini-2.5-pro",
+  "n_samples": 5,
+  "n_codes": 25,
+  "grading_failures": 3,
+  "code_level": {
+    "TCE_rate_percent": 16.0,
+    "wrongful_deduction_percent": 4.0,
+    "over_credit_percent": 12.0,
+    "TCE_95CI_student_bootstrap": [
+      10.0,
+      40.0
+    ]
+  },
+  "sample_level": {
+    "TCE_rate_percent": 60.0,
+    "with_wrongful_deduction_percent": 20.0,
+    "with_over_credit_percent": 40.0,
+    "TCE_95CI_student_bootstrap": [
+      50.0,
+      100.0
+    ]
+  },
+  "score_MAE_target_vs_gold": 0.008,
+  "grader_validity_gold_vs_TA": {
+    "code_exact_agreement_percent": 84.0,
+    "score_MAE": 0.012
+  },
+  "grader_noise_floor_code_flip_percent": 4.0
+}

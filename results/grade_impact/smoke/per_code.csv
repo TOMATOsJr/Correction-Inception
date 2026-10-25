@@ -1,0 +1,26 @@
+Homework ID,Student ID,Question ID,code,gold,target,ta,gold_rep1,tce,wrongful,overcredit
+Homework1,student_31,3_6-1,M,0.0,0.0,0.0,0.0,False,False,False
+Homework1,student_31,3_6-1,E,0.0,0.01,0.0,0.0,True,True,False
+Homework1,student_31,3_6-1,C,0.0,0.0,0.0,0.0,False,False,False
+Homework1,student_31,3_6-1,U,0.0,0.0,0.0,0.0,False,False,False
+Homework1,student_31,3_6-1,NC,0.0,0.0,0.0,0.0,False,False,False
+Homework8,student_31,10_4-1,M,0.0,0.0,0.0,0.0,False,False,False
+Homework8,student_31,10_4-1,E,0.0,0.0,0.0,0.0,False,False,False
+Homework8,student_31,10_4-1,C,0.01,0.0,0.0,0.0,True,False,True
+Homework8,student_31,10_4-1,U,0.0,0.0,0.0,0.0,False,False,False
+Homework8,student_31,10_4-1,NC,0.0,0.0,0.0,0.0,False,False,False
+Homework8,student_16,10_6-1,M,0.0,0.0,0.0,,False,False,False
+Homework8,student_16,10_6-1,E,0.02,0.01,0.0,,True,False,True
+Homework8,student_16,10_6-1,C,0.0,0.0,0.0,,False,False,False
+Homework8,student_16,10_6-1,U,0.01,0.0,0.0,,True,False,True
+Homework8,student_16,10_6-1,NC,0.02,0.02,0.0,,False,False,False
+Homework1,student_31,2_4-6,M,0.0,0.0,0.0,0.0,False,False,False
+Homework1,student_31,2_4-6,E,0.0,0.0,0.0,0.0,False,False,False
+Homework1,student_31,2_4-6,C,0.0,0.0,0.0,0.0,False,False,False
+Homework1,student_31,2_4-6,U,0.0,0.0,0.0,0.0,False,False,False
+Homework1,student_31,2_4-6,NC,0.0,0.0,0.0,0.0,False,False,False
+Homework5,student_31,7_4-1,M,0.0,0.0,0.0,,False,False,False
+Homework5,student_31,7_4-1,E,0.0,0.0,0.0,,False,False,False
+Homework5,student_31,7_4-1,C,0.0,0.0,0.0,,False,False,False
+Homework5,student_31,7_4-1,U,0.0,0.0,0.0,,False,False,False
+Homework5,student_31,7_4-1,NC,0.0,0.0,0.0,,False,False,False

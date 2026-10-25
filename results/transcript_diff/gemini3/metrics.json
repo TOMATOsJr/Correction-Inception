@@ -1,0 +1,16 @@
+{
+  "name": "gemini3",
+  "n_samples": 293,
+  "missing_target": 0,
+  "number_error_sample_rate_percent": 74.4,
+  "number_error_95CI": [
+    63.6,
+    83.67
+  ],
+  "mean_number_mismatches": 6.618,
+  "mean_token_error_rate": 0.302,
+  "token_error_rate_95CI": [
+    0.2431,
+    0.3659
+  ]
+}

@@ -1,0 +1,19 @@
+# GPU machine. Versions pinned to the set tested end to end (CPU code tests + Kaggle runs).
+# Install PyTorch FIRST (RTX 50-series needs a CUDA 12.8+ build):
+#   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
+# then:
+#   pip install -r requirements-gpu.txt
+pandas
+numpy
+tqdm
+pillow
+python-dotenv
+transformers==5.20.2
+accelerate==1.15.0
+peft==0.21.2
+datasets==5.1.0
+bitsandbytes==0.50.2
+qwen-vl-utils==0.0.14
+huggingface_hub==2.3.0
+safetensors==0.8.0
+tokenizers==0.23.3

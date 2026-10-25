@@ -1,0 +1,41 @@
+{
+  "all": {
+    "n_samples": 513,
+    "n_codes": 2565,
+    "code_disagreement_percent": 16.26,
+    "code_over_credit_percent": 1.99,
+    "code_wrongful_deduction_percent": 14.27,
+    "sample_disagreement_percent": 48.73,
+    "sample_disagreement_95CI_student_bootstrap": [
+      40.9,
+      57.8
+    ],
+    "score_MAE": 0.0142
+  },
+  "transcript_WITH_recognition_errors": {
+    "n_samples": 274,
+    "n_codes": 1370,
+    "code_disagreement_percent": 19.93,
+    "code_over_credit_percent": 2.34,
+    "code_wrongful_deduction_percent": 17.59,
+    "sample_disagreement_percent": 59.12,
+    "sample_disagreement_95CI_student_bootstrap": [
+      50.4,
+      67.7
+    ],
+    "score_MAE": 0.0167
+  },
+  "transcript_WITHOUT_recognition_errors": {
+    "n_samples": 239,
+    "n_codes": 1195,
+    "code_disagreement_percent": 12.05,
+    "code_over_credit_percent": 1.59,
+    "code_wrongful_deduction_percent": 10.46,
+    "sample_disagreement_percent": 36.82,
+    "sample_disagreement_95CI_student_bootstrap": [
+      27.0,
+      48.3
+    ],
+    "score_MAE": 0.0114
+  }
+}

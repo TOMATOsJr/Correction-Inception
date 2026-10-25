@@ -1,0 +1,97 @@
+{
+  "samples": 293,
+  "true_numeric_misreads": 226,
+  "flags": 439,
+  "precision_percent": 3.6,
+  "recall_percent": 7.1,
+  "random_baseline_precision_percent": 5.0,
+  "examples": [
+    {
+      "id": "Homework6/student_4/8_3-9",
+      "gemini": "0.35",
+      "repeated_variant": [
+        "-0.35"
+      ]
+    },
+    {
+      "id": "Homework6/student_38/8_7-3",
+      "gemini": "1.5",
+      "repeated_variant": [
+        "15"
+      ]
+    },
+    {
+      "id": "Homework1/student_21/3_2-2",
+      "gemini": "-3",
+      "repeated_variant": [
+        "3"
+      ]
+    },
+    {
+      "id": "Homework5/student_41/7_2-4",
+      "gemini": "12",
+      "repeated_variant": [
+        "10",
+        "-12"
+      ]
+    },
+    {
+      "id": "Homework5/student_42/7_5-5",
+      "gemini": "-4",
+      "repeated_variant": [
+        "4"
+      ]
+    },
+    {
+      "id": "Homework4/student_42/6_4-6",
+      "gemini": "10",
+      "repeated_variant": [
+        "12"
+      ]
+    },
+    {
+      "id": "Homework2/student_21/4_4-6",
+      "gemini": "7",
+      "repeated_variant": [
+        "1",
+        "5"
+      ]
+    },
+    {
+      "id": "Homework8/student_2/10_6-1",
+      "gemini": "60",
+      "repeated_variant": [
+        "20",
+        "50"
+      ]
+    },
+    {
+      "id": "Homework6/student_42/8_3-10",
+      "gemini": "16",
+      "repeated_variant": [
+        "12"
+      ]
+    },
+    {
+      "id": "Homework6/student_38/8_4-1",
+      "gemini": "-15",
+      "repeated_variant": [
+        "-1.5"
+      ]
+    },
+    {
+      "id": "Homework4/student_35/6_3-2",
+      "gemini": "12",
+      "repeated_variant": [
+        "-12"
+      ]
+    },
+    {
+      "id": "Homework8/student_38/10_4-6",
+      "gemini": "20",
+      "repeated_variant": [
+        "60"
+      ]
+    }
+  ]
+}

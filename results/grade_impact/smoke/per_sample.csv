@@ -1,0 +1,6 @@
+Homework ID,Student ID,Question ID,score_gold,score_target,score_ta,tce,wrongful,overcredit
+Homework1,student_31,3_6-1,1.0,0.99,1,True,True,False
+Homework8,student_31,10_4-1,0.99,1.0,1,True,False,True
+Homework8,student_16,10_6-1,0.95,0.97,1,True,False,True
+Homework1,student_31,2_4-6,1.0,1.0,1,False,False,False
+Homework5,student_31,7_4-1,1.0,1.0,1,False,False,False

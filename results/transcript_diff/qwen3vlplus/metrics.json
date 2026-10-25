@@ -1,0 +1,16 @@
+{
+  "name": "qwen3vlplus",
+  "n_samples": 293,
+  "missing_target": 0,
+  "number_error_sample_rate_percent": 69.62,
+  "number_error_95CI": [
+    58.01,
+    79.72
+  ],
+  "mean_number_mismatches": 7.195,
+  "mean_token_error_rate": 0.2902,
+  "token_error_rate_95CI": [
+    0.2296,
+    0.3489
+  ]
+}

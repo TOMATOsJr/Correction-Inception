@@ -1,0 +1,45 @@
+{
+  "task": "v6_Gemini_2p5",
+  "transcriber": "gemini-2.5-pro",
+  "judge": "hf-text:Qwen/Qwen2.5-7B-Instruct",
+  "sample_status": {
+    "ok": 513
+  },
+  "metrics_before_filter_step9": {
+    "n_samples": 513,
+    "n_judge_errors": 239,
+    "SER_percent": 48.73,
+    "AEC": 0.569,
+    "total_errors": 292
+  },
+  "metrics_final": {
+    "n_samples": 513,
+    "n_judge_errors": 239,
+    "SER_percent": 48.73,
+    "AEC": 0.569,
+    "total_errors": 292,
+    "taxonomy_counts": {
+      "Category 1": 0,
+      "Category 2": 0,
+      "Category 3": 0,
+      "Category 4": 0
+    },
+    "taxonomy_share_percent": {
+      "Category 1": 0.0,
+      "Category 2": 0.0,
+      "Category 3": 0.0,
+      "Category 4": 0.0
+    },
+    "ours_student_bootstrap_95CI": {
+      "n_students": 11,
+      "SER_percent": [
+        43.09,
+        54.25
+      ],
+      "AEC": [
+        0.485,
+        0.659
+      ]
+    }
+  }
+}

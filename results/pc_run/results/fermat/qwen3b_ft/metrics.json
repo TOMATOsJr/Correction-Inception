@@ -1,0 +1,21 @@
+{
+  "name": "qwen3b_ft",
+  "model": "hf:Qwen/Qwen2.5-VL-3B-Instruct",
+  "adapter": "results/reader_lora",
+  "split": "test",
+  "n": 425,
+  "n_api_errors": 0,
+  "n_erroneous_evaluable": 359,
+  "silent_correction_rate_percent": 76.32,
+  "token_error_rate_vs_written_percent": 16.47,
+  "silent_correction_by_handwriting_style": {
+    "True": [
+      76.5,
+      319
+    ],
+    "False": [
+      75.0,
+      40
+    ]
+  }
+}

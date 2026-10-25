@@ -1,0 +1,15 @@
+{
+  "finished": "Sun Oct 25 21:39:45 2026",
+  "hours": 3.21,
+  "steps": {
+    "train": "ok",
+    "fermat_ft": "ok",
+    "fermat_base": "ok",
+    "read_qwen3b_ft": "ok",
+    "read_qwen3b_base": "ok",
+    "diff_qwen3b_ft": "ok",
+    "grade_qwen3b_ft": "ok",
+    "diff_qwen3b_base": "ok",
+    "grade_qwen3b_base": "ok"
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "stats": {
+    "samples": 293,
+    "gold_eq": 149,
+    "gold_slips": 5,
+    "target_eq": 153,
+    "target_inconsistent": 14,
+    "aligned": 144,
+    "silent_correction": 0,
+    "misread_induced": 7,
+    "slip_kept": 5,
+    "flag_on_diff": 7
+  },
+  "silent_correction_rate_among_aligned_student_slips_percent": 0.0,
+  "detector_precision_inconsistent_flag_on_real_difference_percent": 50.0,
+  "examples": {
+    "silent_correction": [],
+    "misread_induced": [
+      {
+        "id": "Homework6/student_16/8_4-1",
+        "gold": "(((1)/(8)) + ((1)/(8)))**(-1) = 4",
+        "gemini": "(8*8/16)**(-1) = 4"
+      },
+      {
+        "id": "Homework6/student_16/8_3-10",
+        "gold": "(((3)/(12)) + ((1)/(12)))**(-1) = 3",
+        "gemini": "(((4 * 12)/(12+4)))**(-1) = 3"
+      },
+      {
+        "id": "Homework4/student_1/6_4-6",
+        "gold": "-((5)/(4)) * -((12)/(13)) = 1.154",
+        "gemini": "-((5)/(4)) * ((12)/(13)) = 1.154"
+      },
+      {
+        "id": "Homework2/student_38/4_4-1",
+        "gold": "-((28)/(3)) - ((-16)/(3)) = -4",
+        "gemini": "-((28)/(3)) - ((16)/(3)) = -4"
+      },
+      {
+        "id": "Homework6/student_38/8_3-10",
+        "gold": "((18)/(9/4)) = 8",
+        "gemini": "((18)/(9)) = 8"
+      },
+      {
+        "id": "Homework7/student_35/9_4-2",
+        "gold": "-((2)/(1/4)) - 0 = -8",
+        "gemini": "-((2)/(3/4)) - 0 = -8"
+      },
+      {
+        "id": "Homework2/student_6/4_5-2",
+        "gold": "((-13-5)/(40)) /2 = -((18)/(80))",
+        "gemini": "((-13-5)/(40)) = -((18)/(80))"
+      }
+    ]
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "n_matched": 513,
+  "SER_ours": 1.75,
+  "SER_paper_judge": 53.41,
+  "AEC_ours": 0.027,
+  "AEC_paper_judge": 1.232,
+  "sample_agreement_percent": 48.34,
+  "cohen_kappa_has_error": 0.031,
+  "error_count_pearson_r": 0.257,
+  "ours_flags_paper_clean": 0,
+  "paper_flags_ours_clean": 265
+}

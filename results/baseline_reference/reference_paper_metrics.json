@@ -1,0 +1,188 @@
+[
+  {
+    "transcriber": "claude-sonnet-4-5-20250929",
+    "n_samples": 513,
+    "n_judge_errors": 1,
+    "SER_percent": 80.7,
+    "AEC": 2.768,
+    "total_errors": 1420,
+    "ours_student_bootstrap_95CI": {
+      "n_students": 11,
+      "SER_percent": [
+        74.42,
+        87.07
+      ],
+      "AEC": [
+        2.343,
+        3.237
+      ]
+    },
+    "taxonomy_counts": {
+      "Category 1": 642,
+      "Category 2": 367,
+      "Category 3": 196,
+      "Category 4": 208
+    },
+    "taxonomy_share_percent": {
+      "Category 1": 45.4,
+      "Category 2": 26.0,
+      "Category 3": 13.9,
+      "Category 4": 14.7
+    }
+  },
+  {
+    "transcriber": "gemini-2.5-pro",
+    "n_samples": 513,
+    "n_judge_errors": 0,
+    "SER_percent": 53.41,
+    "AEC": 1.232,
+    "total_errors": 632,
+    "ours_student_bootstrap_95CI": {
+      "n_students": 11,
+      "SER_percent": [
+        47.98,
+        59.91
+      ],
+      "AEC": [
+        1.054,
+        1.414
+      ]
+    },
+    "taxonomy_counts": {
+      "Category 1": 296,
+      "Category 2": 170,
+      "Category 3": 103,
+      "Category 4": 63
+    },
+    "taxonomy_share_percent": {
+      "Category 1": 46.8,
+      "Category 2": 26.9,
+      "Category 3": 16.3,
+      "Category 4": 10.0
+    }
+  },
+  {
+    "transcriber": "gemini-3-pro-preview",
+    "n_samples": 513,
+    "n_judge_errors": 5,
+    "SER_percent": 37.62,
+    "AEC": 0.616,
+    "total_errors": 316,
+    "ours_student_bootstrap_95CI": {
+      "n_students": 11,
+      "SER_percent": [
+        31.74,
+        42.89
+      ],
+      "AEC": [
+        0.494,
+        0.74
+      ]
+    },
+    "taxonomy_counts": {
+      "Category 1": 150,
+      "Category 2": 84,
+      "Category 3": 42,
+      "Category 4": 35
+    },
+    "taxonomy_share_percent": {
+      "Category 1": 48.2,
+      "Category 2": 27.0,
+      "Category 3": 13.5,
+      "Category 4": 11.3
+    }
+  },
+  {
+    "transcriber": "gpt-5.1",
+    "n_samples": 513,
+    "n_judge_errors": 1,
+    "SER_percent": 71.54,
+    "AEC": 2.051,
+    "total_errors": 1052,
+    "ours_student_bootstrap_95CI": {
+      "n_students": 11,
+      "SER_percent": [
+        62.83,
+        79.54
+      ],
+      "AEC": [
+        1.683,
+        2.464
+      ]
+    },
+    "taxonomy_counts": {
+      "Category 1": 478,
+      "Category 2": 268,
+      "Category 3": 139,
+      "Category 4": 166
+    },
+    "taxonomy_share_percent": {
+      "Category 1": 45.5,
+      "Category 2": 25.5,
+      "Category 3": 13.2,
+      "Category 4": 15.8
+    }
+  },
+  {
+    "transcriber": "qwen3-vl-8b-thinking",
+    "n_samples": 513,
+    "n_judge_errors": 0,
+    "SER_percent": 85.58,
+    "AEC": 2.805,
+    "total_errors": 1439,
+    "ours_student_bootstrap_95CI": {
+      "n_students": 11,
+      "SER_percent": [
+        79.67,
+        91.45
+      ],
+      "AEC": [
+        2.407,
+        3.221
+      ]
+    },
+    "taxonomy_counts": {
+      "Category 1": 600,
+      "Category 2": 357,
+      "Category 3": 98,
+      "Category 4": 384
+    },
+    "taxonomy_share_percent": {
+      "Category 1": 41.7,
+      "Category 2": 24.8,
+      "Category 3": 6.8,
+      "Category 4": 26.7
+    }
+  },
+  {
+    "transcriber": "qwen3-vl-plus",
+    "n_samples": 513,
+    "n_judge_errors": 2,
+    "SER_percent": 61.79,
+    "AEC": 1.384,
+    "total_errors": 710,
+    "ours_student_bootstrap_95CI": {
+      "n_students": 11,
+      "SER_percent": [
+        53.51,
+        69.74
+      ],
+      "AEC": [
+        1.126,
+        1.677
+      ]
+    },
+    "taxonomy_counts": {
+      "Category 1": 338,
+      "Category 2": 169,
+      "Category 3": 86,
+      "Category 4": 115
+    },
+    "taxonomy_share_percent": {
+      "Category 1": 47.7,
+      "Category 2": 23.9,
+      "Category 3": 12.1,
+      "Category 4": 16.2
+    }
+  }
+]

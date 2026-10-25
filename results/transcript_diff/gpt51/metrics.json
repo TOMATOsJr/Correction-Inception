@@ -1,0 +1,16 @@
+{
+  "name": "gpt51",
+  "n_samples": 293,
+  "missing_target": 0,
+  "number_error_sample_rate_percent": 82.59,
+  "number_error_95CI": [
+    76.05,
+    88.53
+  ],
+  "mean_number_mismatches": 7.485,
+  "mean_token_error_rate": 0.3392,
+  "token_error_rate_95CI": [
+    0.2784,
+    0.3973
+  ]
+}

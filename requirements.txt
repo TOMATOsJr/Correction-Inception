@@ -1,0 +1,10 @@
+# laptop / evaluation
+pandas
+numpy
+tqdm
+pillow
+python-dotenv
+google-genai        # Gemini transcriber + judge
+openai              # optional: OpenAI-compatible transcriber/judge (incl. local vLLM)
+# GPU machine only (Kaggle / Ada) for hf:Qwen backend
+# torch transformers accelerate peft qwen-vl-utils bitsandbytes

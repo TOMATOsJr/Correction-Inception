@@ -1,0 +1,16 @@
+{
+  "name": "qwen3b_ft",
+  "n_samples": 293,
+  "missing_target": 0,
+  "number_error_sample_rate_percent": 91.81,
+  "number_error_95CI": [
+    86.83,
+    96.18
+  ],
+  "mean_number_mismatches": 13.659,
+  "mean_token_error_rate": 0.4763,
+  "token_error_rate_95CI": [
+    0.4095,
+    0.5606
+  ]
+}
