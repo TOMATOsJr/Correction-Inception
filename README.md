@@ -1,4 +1,7 @@
 # Correction Inception
+
+Improvises the transcript given by the vision model within an automated answer sheet evaluation pipeline using multi agent vlm (adverserial and advocate agents) architecture.
+
 **Team Dropouts**: Prabhav (2023115008), Jayant (2023115016), Saloni (2023115001), Sampath (2023102033). LMA Group Project 2026.
 
 AI grading of handwritten answers runs in two stages: a vision-language model transcribes the page, then an LLM grades the text.
