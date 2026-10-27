@@ -120,7 +120,13 @@ def preflight(a, r: Run, need_gpu=True):
           "install the CUDA 12.8 PyTorch build (docs/LOCAL_RUN.md step 5) and a recent NVIDIA driver")
     if gpu:
         free, total = torch.cuda.mem_get_info()
-        check(total > 14e9, f"GPU memory {total / 1e9:.1f} GB (free {free / 1e9:.1f} GB)", "needs a 16 GB GPU")
+        if total > 14e9:
+            check(True, f"GPU memory {total / 1e9:.1f} GB (free {free / 1e9:.1f} GB)")
+        elif total > 9.5e9:
+            r.say(f"  WARN  GPU memory {total / 1e9:.1f} GB (free {free / 1e9:.1f} GB): tight for the 7B grader; "
+                  "if grade steps OOM, set HF_BATCH=4 and lower HF_TOKEN_BUDGET, or grade on a bigger GPU later")
+        else:
+            check(False, f"GPU memory {total / 1e9:.1f} GB (free {free / 1e9:.1f} GB)", "needs a 10+ GB GPU")
         dt = torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16  # what the scripts will use
         try:  # real 4-bit kernel on this GPU (bitsandbytes is the most fragile piece)
             import bitsandbytes as bnb

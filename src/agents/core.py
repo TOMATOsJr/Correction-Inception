@@ -117,28 +117,51 @@ class ArbiterConfig:
     require_consistency_when_available: bool = True
 
 
+def _overlapping(a: str, b: str) -> bool:
+    a, b = re.sub(r"\s+", "", a or ""), re.sub(r"\s+", "", b or "")
+    return bool(a) and bool(b) and (a in b or b in a)
+
+
+def conflicting_indices(claims: list[Claim]) -> set[int]:
+    """Indices of claims that dispute the SAME value with DIFFERENT proposals.
+    Spans may differ in extent ('8 * 4' vs '8 * 4 = 12'), which exact-span matching missed."""
+    bad: set[int] = set()
+    for i in range(len(claims)):
+        for j in range(i + 1, len(claims)):
+            a, b = claims[i], claims[j]
+            if _overlapping(a.span, b.span) and re.sub(r"\s+", "", a.proposed) != re.sub(r"\s+", "", b.proposed):
+                bad.update((i, j))
+    return bad
+
+
 def arbitrate(claims: list[Claim], transcript: str,
-              reread: Callable[[Claim], tuple[str, float]], cfg: ArbiterConfig = ArbiterConfig()) -> list[Claim]:
+              reread: Callable[[Claim], tuple[str, float]], cfg: ArbiterConfig = ArbiterConfig(),
+              use_existing_evidence: bool = False) -> list[Claim]:
     """Gather evidence for every claim and decide. `reread(claim) -> (reading, confidence)` wraps the
-    faithful reader on the claim's image region (context-free)."""
-    # conflicts: two claims on the same span proposing different readings -> human
-    by_span: dict[str, set] = {}
-    for c in claims:
-        by_span.setdefault(re.sub(r"\s+", "", c.span), set()).add(re.sub(r"\s+", "", c.proposed))
-    for c in claims:
-        key = re.sub(r"\s+", "", c.span)
+    faithful reader on the claim's image region (context-free).
+
+    use_existing_evidence=True: the claim already carries evidence (from the interactive ledger), so the
+    re-read and consistency results are taken from it instead of being gathered again."""
+    conflicts = conflicting_indices(claims)
+    for i, c in enumerate(claims):
         if c.region_type == "diagram":
             c.decision, c.decision_reason = ESCALATE, "diagram regions always go to a human"
             continue
         if not span_check(transcript, c.span):
             c.decision, c.decision_reason = REJECT, "span not found in transcript"
             continue
-        if len(by_span[key]) > 1:
+        if i in conflicts:
             c.decision, c.decision_reason = ESCALATE, "conflicting claims on the same span"
             continue
-        reading, conf = reread(c)
-        cons = consistency_check(transcript, c.span, c.proposed)
-        c.evidence = {"reread": reading, "reread_conf": conf, **cons}
+        key = re.sub(r"\s+", "", c.span)
+        keep = {"rid": c.evidence.get("rid")} if c.evidence.get("rid") else {}
+        if use_existing_evidence and "reread" in c.evidence:
+            reading, conf = str(c.evidence.get("reread", "")), float(c.evidence.get("reread_conf") or 0.0)
+            cons = {k: int(c.evidence.get(k) or 0) for k in ("support", "n_constraints", "reuse_signal")}
+        else:
+            reading, conf = reread(c)
+            cons = consistency_check(transcript, c.span, c.proposed)
+        c.evidence = {**keep, "reread": reading, "reread_conf": conf, **cons}
         matches = re.sub(r"\s+", "", reading) == re.sub(r"\s+", "", c.proposed)
         keeps_span = re.sub(r"\s+", "", reading) == key
         if matches and conf >= cfg.theta and cons["support"] >= 0:

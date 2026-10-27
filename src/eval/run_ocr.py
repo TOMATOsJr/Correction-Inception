@@ -49,14 +49,14 @@ class HFReader:
     """Local Qwen2.5-VL reader (greedy decoding). Optional LoRA adapter for our fine-tuned model."""
 
     def __init__(self, model_id: str, adapter: str | None, max_pixels: int, max_new_tokens: int,
-                 repetition_penalty: float = 1.0):
+                 repetition_penalty: float = 1.0, device: int = 0):
         import torch
         from transformers import AutoProcessor, Qwen2_5_VLForConditionalGeneration
 
         dtype = torch.bfloat16 if torch.cuda.is_available() and torch.cuda.is_bf16_supported() else torch.float16
         self.model = Qwen2_5_VLForConditionalGeneration.from_pretrained(
             model_id, dtype=dtype if torch.cuda.is_available() else torch.float32, attn_implementation="sdpa",
-            device_map={"": 0 if torch.cuda.is_available() else "cpu"})  # one GPU per process (see --shard)
+            device_map={"": device if torch.cuda.is_available() else "cpu"})  # one GPU per process (see --shard)
         if adapter:
             from peft import PeftModel
             self.model = PeftModel.from_pretrained(self.model, adapter)

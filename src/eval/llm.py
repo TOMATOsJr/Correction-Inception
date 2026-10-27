@@ -197,7 +197,10 @@ def _call_hf_text(model: str, prompt: str, temperature: float) -> str:
     with _hf_lock:
         if mid not in _hf_text:
             q = queue.Queue()
-            for d in range(max(1, torch.cuda.device_count())):
+            # HF_TEXT_DEVICES="0" pins the text model to one GPU, leaving the other free for the reader
+            spec = os.environ.get("HF_TEXT_DEVICES", "").replace(",", " ").split()
+            devs = [int(x) for x in spec] or list(range(max(1, torch.cuda.device_count())))
+            for d in devs:
                 threading.Thread(target=_hf_worker, args=(mid, d, q), daemon=True).start()
             _hf_text[mid] = q
     box = {"done": threading.Event()}
@@ -210,10 +213,32 @@ def _call_hf_text(model: str, prompt: str, temperature: float) -> str:
 
 def _call_mock(prompt: str) -> str:
     # Recognises the three EDU-CIRCUIT-HW prompt types by their wording.
+    import json
+    import re
     if "Respond with ONLY the word \"DELETE\"" in prompt:  # step 10 filter
         return "KEEP"
     if "Output ONLY the category number" in prompt:  # step 12 taxonomy
         return "1"
+    if "ROUND 3 (rebuttal)" in prompt:  # mock: the auditor yields, the advocate stands
+        agent = "auditor" if "ROLE: AUDITOR" in prompt else "advocate"
+        return json.dumps({"action": "concede" if agent == "auditor" else "stand", "reason": "mock"})
+    if "ROUND 2 (cross-examination)" in prompt:  # mock: nothing to add once the ledger is on the table
+        return "{\"actions\": [], \"tool_requests\": []}"
+    if "ROUND 1" in prompt and ("ROLE: ADVOCATE" in prompt or "ROLE: AUDITOR" in prompt):
+        import json
+        import re
+        body = prompt.split("TRANSCRIPT:\n", 1)[-1].split("\n\nAUTOMATIC CHECKS", 1)[0]
+        m = re.search(r"(?<![\d.])\d+(?![\d.])", body)
+        if not m:
+            return '{"claims": [], "tool_requests": []}'
+        # the two agents deliberately disagree, so the conflict path (round 3) is exercised
+        delta = 1 if "ROLE: ADVOCATE" in prompt else -1
+        proposed = str(int(m.group()) + delta)
+        claim = {"rubric_code": "M", "span": m.group(), "proposed": proposed,
+                 "region_type": "text", "rationale": "mock"}
+        tools = [{"tool": "crop_reread", "args": {"span": m.group(), "proposed": proposed}, "for_claim": 0},
+                 {"tool": "consistency", "args": {"span": m.group(), "proposed": proposed}, "for_claim": 0}]
+        return json.dumps({"claims": [claim], "tool_requests": tools})
     if "ROLE: ADVOCATE" in prompt or "ROLE: AUDITOR" in prompt:  # agents: claim the first integer is off by one
         import json
         import re
