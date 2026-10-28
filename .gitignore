@@ -3,6 +3,7 @@
 
 # large / third-party (download with scripts/, see data/README.md)
 data/*
+lma_data/
 !data/README.md
 external/
 
