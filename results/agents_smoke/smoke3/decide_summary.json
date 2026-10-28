@@ -1,0 +1,60 @@
+{
+  "name": "smoke3",
+  "protocol": "interactive (r1 -> tools -> r2 -> tools -> r3 -> decide)",
+  "theta": 0.85,
+  "tool_budget_per_agent": 4,
+  "counts": {
+    "samples": 1,
+    "auditor_escalate": 1
+  },
+  "interaction": {
+    "filed_r1": 1,
+    "conflicts_after_r3": 0,
+    "rejected_actions": 0
+  },
+  "tools": {
+    "crop_reread": 1,
+    "failed": 1
+  },
+  "theta_sweep": {
+    "0.5": {
+      "escalate": 1
+    },
+    "0.6": {
+      "escalate": 1
+    },
+    "0.7": {
+      "escalate": 1
+    },
+    "0.8": {
+      "escalate": 1
+    },
+    "0.85": {
+      "escalate": 1
+    },
+    "0.9": {
+      "escalate": 1
+    },
+    "0.95": {
+      "escalate": 1
+    }
+  },
+  "claim_precision_vs_expert": {
+    "all_claims": {
+      "neutral": 1,
+      "precision_percent": 0.0
+    },
+    "agents": {
+      "precision_percent": 0.0
+    },
+    "noverify": {
+      "precision_percent": 0.0
+    },
+    "advocate_only": {
+      "precision_percent": 0.0
+    },
+    "auditor_only": {
+      "precision_percent": 0.0
+    }
+  }
+}
