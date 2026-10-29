@@ -19,7 +19,7 @@ source "$ROOT/../venv/bin/activate"
 
 DATA="${LMA_DATA:-$HOME/Correction-Inception/lma_data}"
 EDU="${LMA_EDU:-$DATA/edu_text/edu_data}"   # same layout as setup_ada.sh
-IMAGES="${LMA_IMAGES:-$DATA/images}"
+IMAGES="${LMA_IMAGES:-$EDU}"   # images live in the dataset itself ($DATA/images is only a symlink to it)
 PROMPT=src/eval/prompts/Initial_prompt_wo_problem_statement_v6.txt   # the paper's v6 prompt (external/ is not in git)
 QWEN_ROOT="${LMA_QWEN_ROOT:-local_results/results/Outputs/qwen3b_ft}"
 ADAPTER="${LMA_ADAPTER:-local_results/results/reader_lora}"
