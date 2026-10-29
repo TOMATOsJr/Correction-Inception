@@ -4,6 +4,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from core import ACCEPT, ESCALATE, REJECT, Claim, apply_accepted, arbitrate, consistency_check, span_check  # noqa: E402
+from protocol import parse_actions, parse_tool_requests  # noqa: E402
 
 # Student wrote R = 2+3 = 6 (slip) and carried 6 forward; the transcriber silently corrected it to 5.
 T = "R = 2 + 3 = 5\nI = 12 / 6 = 2\nP = 4 * 6 = 24"
@@ -54,6 +55,53 @@ def test_invented_span_rejected():
 def test_low_confidence_escalates():
     c = Claim("auditor", "M", "2 + 3 = 5", "2 + 3 = 6")
     assert arbitrate([c], T, reread=lambda cl: ("2 + 3 = 6", 0.4))[0].decision == ESCALATE
+
+
+# ------------------------------------------------------------------ prompt parsing (protocol.py)
+def test_parse_actions_single_backslash_latex():
+    # invalid escapes (\O) used to fail the whole parse; valid ones (\f) silently mangled
+    raw = '{"actions": [{"action": "new", "span": "\\frac{1}{48} + \\frac{1}{24} = 16 \\Omega", "proposed": "j50"}]}'
+    acts = parse_actions(raw)
+    assert len(acts) == 1
+    assert acts[0]["span"] == "\\frac{1}{48} + \\frac{1}{24} = 16 \\Omega"
+
+
+def test_parse_actions_valid_escape_mangle():
+    # \frac inside a JSON string is a VALID escape (\f = formfeed): the old parser
+    # "succeeded" and stored formfeed + "rac{...}", which then never matched the transcript
+    raw = '{"claims": [{"rubric_code": "M", "span": "\\frac{1}{48}", "proposed": "\\frac{1}{24}"}]}'
+    claims = parse_actions(raw)
+    assert len(claims) == 1 and claims[0]["span"] == "\\frac{1}{48}"
+
+
+def test_parse_actions_clean_json_untouched():
+    # properly escaped LaTeX and legit unicode escapes must survive byte-for-byte
+    raw = '{"actions": [{"action": "new", "span": "\\\\frac{1}{48} = 30\\u00b0", "proposed": "x"}]}'
+    acts = parse_actions(raw)
+    assert acts[0]["span"] == "\\frac{1}{48} = 30\u00b0"
+
+
+def test_parse_actions_truncated_salvage():
+    # responses are stored truncated; a balanced inner object must still be recovered
+    raw = '{"actions": [{"action": "withdraw", "cid": "#1", "reason": "evidence does not support it"},'
+    acts = parse_actions(raw)
+    assert acts and acts[0]["action"] == "withdraw"
+
+
+def test_parse_actions_malformed_salvage():
+    # object closed early, stray key outside: the intact action must survive
+    raw = '{"actions": [{"action": "counter", "cid": "#1", "span": "j50", "proposed": "j25"}, "for_claim": "#1"}]}'
+    acts = parse_actions(raw)
+    assert any(a.get("action") == "counter" for a in acts)
+
+
+def test_parse_tool_requests_nested_in_actions():
+    # some models put {"tool_requests": [...]} inside the actions list
+    raw = '{"actions": [{"action": "new", "span": "a", "proposed": "b"}, ' \
+          '{"tool_requests": [{"tool": "crop_reread", "args": {"span": "a", "proposed": "b"}}]}]}'
+    assert len(parse_actions(raw)) == 1
+    reqs = parse_tool_requests(raw)
+    assert len(reqs) == 1 and reqs[0]["tool"] == "crop_reread"
 
 
 if __name__ == "__main__":
