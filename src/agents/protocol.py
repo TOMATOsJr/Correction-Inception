@@ -341,22 +341,85 @@ def conflict_groups(led: Ledger) -> list[list[str]]:
 
 
 # ------------------------------------------------------------------ prompt parsing
+# Models often emit LaTeX with single backslashes (\frac, \Omega) inside JSON strings.
+# \O is an invalid JSON escape (parse error), but \f, \t, \n, \b, \r are VALID escapes
+# that silently mangle the text (\frac -> formfeed + "rac", \text -> tab + "ext").
+# Repair: re-escape any single backslash that starts a LaTeX-like sequence, then retry.
+_SUSPECT = re.compile(r'\\[ftnbr](?=[a-zA-Z])')   # raw \frac / \text / \nu / \beta / \rho
+
+
+def _repair(text: str) -> str:
+    text = re.sub(r'(?<!\\)\\u(?![0-9a-fA-F]{4})', r'\\\\u', text)   # \mu, \nu (invalid \u)
+    text = re.sub(r'(?<!\\)\\(?=[a-tv-zA-Z])', r'\\\\', text)        # \frac, \text, \rho, ... ('u' kept for \uXXXX)
+    text = re.sub(r'(?<!\\)\\(?![\\/"bfnrtu])', r'\\\\', text)       # \O, \G, \{, ...
+    return text
+
+
+def _loads(text: str):
+    try:
+        data = json.loads(text)
+        if not _SUSPECT.search(text):   # parsed clean -> trust it
+            return data
+    except Exception:
+        pass
+    return json.loads(_repair(text))
+
+
+def _salvage_objects(text: str) -> list[dict]:
+    """Last resort for structurally broken / truncated JSON (responses are stored
+    truncated, objects may be closed early): brace-match every balanced {...} at any
+    depth and parse each on its own, so one malformed element does not discard the
+    whole response."""
+    out, stack, in_str, esc = [], [], False, False
+    for i, ch in enumerate(text):
+        if in_str:
+            if esc:
+                esc = False
+            elif ch == '\\':
+                esc = True
+            elif ch == '"':
+                in_str = False
+            continue
+        if ch == '"':
+            in_str = True
+        elif ch == '{':
+            stack.append(i)
+        elif ch == '}' and stack:
+            s = stack.pop()
+            try:
+                obj = _loads(text[s:i + 1])
+            except Exception:
+                continue
+            if isinstance(obj, dict) and obj not in out:
+                out.append(obj)
+    return out
+
+
+def _is_action(a: dict) -> bool:
+    if a.get("action"):
+        return True
+    # a filed claim (vs. a tool-call args fragment) carries claim metadata too
+    return "span" in a and "proposed" in a and bool({"rubric_code", "region_type", "rationale"} & set(a))
+
+
 def parse_actions(text: str) -> list[dict]:
     """Parse an agent's JSON. Accepts {"actions": [...]}, {"claims": [...]} or a bare list."""
     if not text or text.startswith("Error:"):
         return []
     for cand in (text, *re.findall(r"```(?:json)?(.*?)```", text, re.S), *re.findall(r"[\{\[].*[\}\]]", text, re.S)):
         try:
-            data = json.loads(cand.strip())
+            data = _loads(cand.strip())
         except Exception:
             continue
         if isinstance(data, dict):
             for k in ("actions", "claims"):
                 if isinstance(data.get(k), list):
-                    return [a for a in data[k] if isinstance(a, dict)]
+                    # some models nest {"tool_requests": [...]} inside the action list
+                    return [a for a in data[k] if isinstance(a, dict) and "tool_requests" not in a]
         if isinstance(data, list):
-            return [a for a in data if isinstance(a, dict)]
-    return []
+            return [a for a in data if isinstance(a, dict) and "tool_requests" not in a]
+    # structurally broken JSON: keep whatever well-formed action objects can be matched out
+    return [a for a in _salvage_objects(text) if _is_action(a)]
 
 
 def parse_tool_requests(text: str) -> list[dict]:
@@ -364,12 +427,21 @@ def parse_tool_requests(text: str) -> list[dict]:
         return []
     for cand in (text, *re.findall(r"```(?:json)?(.*?)```", text, re.S), *re.findall(r"\{.*\}", text, re.S)):
         try:
-            data = json.loads(cand.strip())
-            if isinstance(data, dict) and isinstance(data.get("tool_requests"), list):
-                return [t for t in data["tool_requests"] if isinstance(t, dict)]
+            data = _loads(cand.strip())
         except Exception:
             continue
-    return []
+        if isinstance(data, dict):
+            if isinstance(data.get("tool_requests"), list):
+                return [t for t in data["tool_requests"] if isinstance(t, dict)]
+            for a in data.get("actions", []) if isinstance(data.get("actions"), list) else []:
+                if isinstance(a, dict) and isinstance(a.get("tool_requests"), list):
+                    return [t for t in a["tool_requests"] if isinstance(t, dict)]
+    # structurally broken JSON: keep tool requests matched out of intact fragments
+    reqs = []
+    for obj in _salvage_objects(text):
+        if isinstance(obj.get("tool_requests"), list):
+            reqs += [t for t in obj["tool_requests"] if isinstance(t, dict)]
+    return reqs
 
 
 def parse_single_action(text: str) -> dict | None:
@@ -378,11 +450,14 @@ def parse_single_action(text: str) -> dict | None:
         return None
     for cand in (text, *re.findall(r"```(?:json)?(.*?)```", text, re.S), *re.findall(r"\{.*\}", text, re.S)):
         try:
-            data = json.loads(cand.strip())
+            data = _loads(cand.strip())
             if isinstance(data, dict) and str(data.get("action", "")).lower() in ("stand", "concede", "withdraw"):
                 return data
         except Exception:
             continue
+    for obj in _salvage_objects(text):   # broken JSON: keep a well-formed rebuttal if there is one
+        if str(obj.get("action", "")).lower() in ("stand", "concede", "withdraw"):
+            return obj
     return None
 
 
