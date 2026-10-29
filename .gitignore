@@ -29,6 +29,8 @@ results/**/step9_original.csv
 results/**/claims.jsonl
 results/**/ledger.jsonl
 results/**/rereads.jsonl
+results/detect/**/labels.csv
+results/detect/**/scores*.csv
 step9_normalized.csv
 # large artefacts (GitHub limit 100 MB/file): trained adapter, duplicates
 **/reader_lora/
