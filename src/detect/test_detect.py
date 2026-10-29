@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from evaluate_detection import at_k, auroc, average_precision  # noqa: E402
 from labels import label_page, math_tokens  # noqa: E402
 from score_tokens import aggregate  # noqa: E402
+from verify_choice import candidates, decide, masked_line, metrics  # noqa: E402
 
 
 def test_tokens_keep_offsets_and_skip_formatting():
@@ -50,6 +51,44 @@ def test_aggregate_takes_weakest_piece_and_builds_alternative():
     r = rows["72"]
     assert r["n_pieces"] == 2 and r["nll"] == 1.2 and r["neg_gap"] == 0.2 and r["dent"] == 0.9
     assert r["alt"] == "78"
+    assert r["alts"] == ""  # no digit candidates given
+
+
+def test_aggregate_alts_swap_weakest_digit():
+    answer = "$I = 72$"
+    spans = [(0, 1), (1, 2), (2, 4), (4, 5), (5, 6), (6, 7), (7, 8)]
+    pieces = [{"start": s, "end": e, "lp": -0.01, "gap": 0.9, "ent": 0.1, "dent": 0.0, "alt_piece": "x",
+               "alt_digits": ""} for s, e in spans]
+    pieces[4].update(dent=0.1, alt_digits="1")
+    pieces[5].update(gap=-0.2, dent=0.9, alt_digits="837")  # the '2': reader's runner-up digits 8, 3, 7
+    r = {r["text"]: r for r in aggregate(answer, pieces)}["72"]
+    assert r["alts"] == "78|73|77"
+
+
+def test_candidates_reader_first_then_lookalikes_no_duplicates():
+    c = candidates("38", "35|38|36", 10)
+    assert c == ["35", "36", "88", "58", "33", "30"]  # reader's (minus the reading itself), then look-alikes
+    assert candidates("38", float("nan"), 2) == ["88", "58"]
+
+
+def test_masked_line_and_decide():
+    ans = "first line\n$V = 3 \\cdot 4$\nlast"
+    s = ans.index("3")
+    assert masked_line(ans, s, s + 1) == "$V = [?] \\cdot 4$"
+    d = decide([("8", 0.7, True), ("6", 0.9, False)])
+    assert d["best"] == "6" and not d["propose"]  # strongest challenger flips with the order: TA, not a fix
+    assert decide([("8", 0.7, True), ("6", 0.2, True)])["propose"]
+    assert not decide([])["propose"]
+
+
+def test_verify_metrics():
+    df = pd.DataFrame({"misread": [1, 1, 0, 0], "gold": ["3.0", "5.0", "", ""], "cands": ["3|6", "6", "1", "4"],
+                       "best": ["3", "6", "1", "4"], "propose": [True, True, False, True],
+                       "consistent": [True, True, True, False], "p_change": [0.9, 0.8, 0.1, 0.6],
+                       "neg_gap": [0.5, 0.4, 0.3, 0.2]})
+    m = metrics(df)
+    assert m["candidate_recall"] == 0.5 and m["fix_rate"] == 0.5 and m["wrong_fix_rate"] == 0.5
+    assert m["false_change_rate"] == 0.5 and m["auroc_p_change"] == 1.0
 
 
 def test_metrics():

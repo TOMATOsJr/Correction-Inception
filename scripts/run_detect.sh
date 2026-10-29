@@ -10,6 +10,7 @@
 #
 # Overrides (env vars):
 #   LMA_LIMIT=10                     only the first 10 pages per run (smoke)
+#   LMA_VERIFY_K=3                   forced-choice check of the top-k numbers per page (0 = skip)
 #   LMA_OUT / LMA_DATA / LMA_EDU / LMA_IMAGES / LMA_ADAPTER / LMA_QWEN_ROOT   path overrides
 set -euo pipefail
 
@@ -25,6 +26,7 @@ QWEN_ROOT="${LMA_QWEN_ROOT:-local_results/results/Outputs/qwen3b_ft}"
 ADAPTER="${LMA_ADAPTER:-local_results/results/reader_lora}"
 OUT="${LMA_OUT:-results/detect}"
 LIMIT="${LMA_LIMIT:+--limit $LMA_LIMIT}"
+VERIFY_K="${LMA_VERIFY_K:-3}"
 export HF_HOME="${HF_HOME-/scratch/jayanth.raju/hf_cache}"
 
 mkdir -p "$OUT"
@@ -39,6 +41,9 @@ run() {  # name target_root model_dir reader_tag [adapter args...]
   python src/detect/score_tokens.py --edu-data "$EDU" --images "$IMAGES" --prompt-file "$PROMPT" --target-root "$root" --model-dir "$mdir" --out "$dir" \
     --reader hf:Qwen/Qwen2.5-VL-3B-Instruct "$@" $LIMIT
   python src/detect/evaluate_detection.py --dir "$dir"
+  if [ "$VERIFY_K" != 0 ]; then  # forced-choice A/B on the flagged numbers (same reader)
+    python src/detect/verify_choice.py --dir "$dir" --edu-data "$EDU" --images "$IMAGES" --target-root "$root" \n      --model-dir "$mdir" --reader hf:Qwen/Qwen2.5-VL-3B-Instruct --k "$VERIFY_K" "$@" $LIMIT
+  fi
 }
 
 python src/detect/test_detect.py
@@ -46,4 +51,4 @@ run qwen3b_ft "$QWEN_ROOT" qwen3b_ft ftreader --adapter "$ADAPTER"
 run gemini25 "$EDU/Observationset_Final/v6_Gemini_2p5" gemini-2.5-pro ftreader --adapter "$ADAPTER"
 run qwen3b_ft "$QWEN_ROOT" qwen3b_ft basereader
 run gemini25 "$EDU/Observationset_Final/v6_Gemini_2p5" gemini-2.5-pro basereader
-echo "=== done: $OUT/*/detection_metrics.json"
+echo "=== done: $OUT/*/detection_metrics.json, $OUT/*/verify_metrics.json"

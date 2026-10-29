@@ -59,7 +59,7 @@ def bootstrap_auroc(df: pd.DataFrame, col: str, n: int = 1000, seed: int = 0) ->
 def load(d: Path) -> pd.DataFrame:
     labels = pd.read_csv(d / "labels.csv")
     scores = pd.concat([pd.read_csv(f) for f in sorted(d.glob("scores*.csv"))], ignore_index=True)
-    df = labels.merge(scores[["page", "i", "nll", "neg_gap", "ent", "dent", "alt", "n_pieces"]], on=["page", "i"])
+    df = labels.merge(scores[[c for c in ["page", "i", "nll", "neg_gap", "ent", "dent", "alt", "alts", "n_pieces"] if c in scores]], on=["page", "i"])
     df = df[(df["type"] == "num") & (df["op"] != "ins")].copy()
     df["random"] = np.random.default_rng(0).random(len(df))
     return df
@@ -89,6 +89,9 @@ def main():
     mis = df[df["misread"] == 1]
     gold_alt = mis.apply(lambda r: _num(r["alt"]) is not None and _num(r["alt"]) == float(r["gold"]), axis=1)
     res["alt_recovers_gold_percent"] = round(100 * float(gold_alt.mean()), 2) if len(mis) else None
+    if "alts" in mis:  # is the gold value among the reader's top-3 digit swaps (the verifier's candidates)?
+        in_top = mis.apply(lambda r: float(r["gold"]) in {_num(c) for c in str(r["alts"]).split("|")}, axis=1)
+        res["alts_top3_recover_gold_percent"] = round(100 * float(in_top.mean()), 2) if len(mis) else None
     (d / "detection_metrics.json").write_text(json.dumps(res, indent=2))
     print(json.dumps(res, indent=2))
     cols = ["auroc", "auroc_95CI", "avg_precision", "precision@3", "recall@3"]

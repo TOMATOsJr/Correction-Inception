@@ -12,6 +12,8 @@ Per answer token (from the full next-token distribution):
 Per maths token (labels.math_tokens, same indices as labels.csv), aggregated over its pieces (weakest piece wins):
   nll = max -lp,  neg_gap = max -gap,  ent = max ent,  dent = max dent
   alt  = the token with its weakest piece replaced by the reader's preferred piece (a ready-made 'proposed' reading)
+  alts = for numbers: the token with its weakest DIGIT replaced by each of the reader's top-3 other digits ('|'-joined),
+         the candidate list for the forced-choice verifier (verify_choice.py)
 
   python score_tokens.py --target-root R --model-dir qwen3b_ft --out results/detect/qwen3b_ft \\
       --reader hf:Qwen/Qwen2.5-VL-3B-Instruct --adapter results/pc_run/results/reader_lora
@@ -36,7 +38,8 @@ from labels import GOLD_MODEL_DIR, ITEMS, math_tokens, page_files, page_text  # 
 from evaluate_recognition import RECTIFIED  # noqa: E402
 from run_ocr import DEFAULT_EDU_REPO, DEFAULT_PROMPT, sanitize  # noqa: E402
 
-FIELDS = ["page", "i", "text", "type", "nll", "neg_gap", "ent", "dent", "alt", "n_pieces"]
+FIELDS = ["page", "i", "text", "type", "nll", "neg_gap", "ent", "dent", "alt", "alts", "n_pieces"]
+TOP_DIGITS = 3
 
 
 def page_index(images_root: Path) -> dict:
@@ -96,11 +99,15 @@ class TokenScorer:
             dig = torch.log_softmax(dig, -1)
             dent = -(dig.exp() * dig).sum(-1)
             is_digit = (tgt[:, None] == self.digit_ids[None]).any(-1)
+            dig_order = dig.argsort(-1, descending=True)[:, :TOP_DIGITS + 1].tolist()  # indices into '0123456789'
             for k in range(len(tgt)):
                 rows.append({"start": offs[s + k][0], "end": offs[s + k][1], "lp": float(lp[k]),
                              "gap": float(lp[k].exp() - other_p[k]), "ent": float(ent[k]),
                              "dent": float(dent[k]) if bool(is_digit[k]) else 0.0,
-                             "alt_piece": self.tok.decode([int(other_id[k])])})
+                             "alt_piece": self.tok.decode([int(other_id[k])]),
+                             "alt_digits": "".join(str(d) for d in dig_order[k]
+                                                   if str(d) != self.tok.decode([int(tgt[k])]))[:TOP_DIGITS]
+                             if bool(is_digit[k]) else ""})
         return rows, truncated
 
 
@@ -114,9 +121,14 @@ def aggregate(answer: str, pieces: list[dict]) -> list[dict]:
         weak = min(ps, key=lambda p: p["gap"])
         alt = answer[t["start"]:weak["start"]] + weak["alt_piece"] + answer[weak["end"]:t["end"]] \
             if weak["start"] >= t["start"] and weak["end"] <= t["end"] else ""
+        digs = [p for p in ps if p.get("alt_digits") and p["start"] >= t["start"] and p["end"] <= t["end"]]
+        alts = ""
+        if t["type"] == "num" and digs:  # weakest digit (by digit entropy, then gap) swapped for each runner-up
+            wd = max(digs, key=lambda p: (p["dent"], -p["gap"]))
+            alts = "|".join(answer[t["start"]:wd["start"]] + d + answer[wd["end"]:t["end"]] for d in wd["alt_digits"])
         out.append({"i": t["i"], "text": t["raw"], "type": t["type"], "nll": round(max(-p["lp"] for p in ps), 5),
                     "neg_gap": round(-weak["gap"], 5), "ent": round(max(p["ent"] for p in ps), 5),
-                    "dent": round(max(p["dent"] for p in ps), 5), "alt": alt.strip(), "n_pieces": len(ps)})
+                    "dent": round(max(p["dent"] for p in ps), 5), "alt": alt.strip(), "alts": alts, "n_pieces": len(ps)})
     return out
 
 
