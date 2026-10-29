@@ -1,0 +1,31 @@
+{
+  "name": "B1_agents_qwen3b_ft_full_none_qwen7b",
+  "grader": "hf-text:Qwen/Qwen2.5-7B-Instruct",
+  "target": "results/agents/agents_qwen3b_ft_full/Outputs/none :: qwen3b_ft",
+  "n_samples": 214,
+  "n_codes": 1070,
+  "grading_failures": 0,
+  "code_level": {
+    "TCE_rate_percent": 28.5,
+    "wrongful_deduction_percent": 23.27,
+    "over_credit_percent": 5.23,
+    "TCE_95CI_student_bootstrap": [
+      24.24,
+      34.23
+    ]
+  },
+  "sample_level": {
+    "TCE_rate_percent": 71.03,
+    "with_wrongful_deduction_percent": 58.88,
+    "with_over_credit_percent": 18.22,
+    "TCE_95CI_student_bootstrap": [
+      64.26,
+      79.62
+    ]
+  },
+  "score_MAE_target_vs_gold": 0.0269,
+  "grader_validity_gold_vs_TA": {
+    "code_exact_agreement_percent": 71.68,
+    "score_MAE": 0.0296
+  }
+}

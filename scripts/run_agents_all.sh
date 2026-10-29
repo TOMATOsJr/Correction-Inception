@@ -19,7 +19,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
-source "$ROOT/venv/bin/activate"
+source "$ROOT/../venv/bin/activate"
 
 DATA="${LMA_DATA:-$HOME/Correction-Inception/lma_data}"
 TARGET_ROOT="${LMA_TARGET_ROOT:-local_results/results/Outputs/qwen3b_ft}"
@@ -30,6 +30,7 @@ OUT="${LMA_OUT:-results/agents}"
 LIMIT="${LMA_LIMIT:-}"
 CONCURRENCY="${LMA_CONCURRENCY:-6}"
 THETA="${LMA_THETA:-0.85}"
+export HF_HOME="${HF_HOME-/scratch/jayanth.raju/hf_cache}"
 export HF_TEXT_DEVICES="${HF_TEXT_DEVICES:-0}"   # pin the 7B agent model to GPU 0
 
 mkdir -p "$OUT/$NAME"

@@ -1,0 +1,16 @@
+{
+  "name": "agents_qwen3b_ft_full_agents",
+  "n_samples": 214,
+  "missing_target": 79,
+  "number_error_sample_rate_percent": 92.06,
+  "number_error_95CI": [
+    86.88,
+    96.99
+  ],
+  "mean_number_mismatches": 12.023,
+  "mean_token_error_rate": 0.4349,
+  "token_error_rate_95CI": [
+    0.3744,
+    0.4983
+  ]
+}
