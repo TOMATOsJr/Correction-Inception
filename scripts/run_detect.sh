@@ -51,6 +51,15 @@ run() {  # name target_root model_dir reader_tag [adapter args...]
 }
 
 python src/detect/test_detect.py
+# the reader silently falls back to CPU without a GPU (~35 s/page): stop instead
+python -c "
+import sys, torch
+n = torch.cuda.device_count() if torch.cuda.is_available() else 0
+d = $READER_DEVICE
+if d >= n:
+    sys.exit(f'GPU {d} not available (CUDA sees {n} GPU(s)); check nvidia-smi / CUDA_VISIBLE_DEVICES, or set LMA_READER_DEVICE=0')
+print(f'reader on GPU {d}: {torch.cuda.get_device_name(d)}')
+"
 run qwen3b_ft "$QWEN_ROOT" qwen3b_ft ftreader --adapter "$ADAPTER"
 # run gemini25 "$EDU/Observationset_Final/v6_Gemini_2p5" gemini-2.5-pro ftreader --adapter "$ADAPTER"
 run qwen3b_ft "$QWEN_ROOT" qwen3b_ft basereader

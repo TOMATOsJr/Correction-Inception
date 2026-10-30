@@ -182,6 +182,16 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     suffix = f".{a.shard.replace('/', 'of')}" if a.shard else ""
     path, meta_path = out / f"scores{suffix}.csv", out / f"score_pages{suffix}.jsonl"
+    if path.exists():  # scores from an older version (different columns) cannot be appended to: set them aside
+        with open(path, encoding="utf-8") as f:
+            header = f.readline().strip().split(",")
+        if header != FIELDS:
+            for stale in (path, meta_path):
+                if stale.exists():
+                    stale.replace(stale.with_name(stale.name + ".stale"))
+            print(f"{path} has old columns {header}: moved it and its page log to *.stale, re-scoring all pages")
+    elif meta_path.exists():  # page log without its scores: nothing to resume from
+        meta_path.replace(meta_path.with_name(meta_path.name + ".stale"))
     done = set()
     if meta_path.exists():
         done = {json.loads(line)["page"] for line in meta_path.read_text(encoding="utf-8").splitlines() if line.strip()}
