@@ -1,0 +1,79 @@
+{
+  "experiment": "agents_qwen3b_ft_50",
+  "requested_samples": 50,
+  "evaluated_samples": 35,
+  "arbitration": {
+    "samples": 35,
+    "advocate_escalate": 46,
+    "auditor_escalate": 30,
+    "advocate_reject": 2
+  },
+  "interaction": {
+    "filed_r1": 62,
+    "conflicts_after_r3": 12,
+    "rejected_actions": 78,
+    "filed_r2": 26,
+    "countered": 21,
+    "withdrawn": 8,
+    "defended": 2,
+    "stood": 1,
+    "revised": 2
+  },
+  "tool_statistics": {
+    "crop_reread": 117,
+    "ok": 32,
+    "failed": 90,
+    "consistency": 5
+  },
+  "claim_quality": {
+    "all_claims": {
+      "hurts": 11,
+      "neutral": 65,
+      "helps": 2,
+      "precision_percent": 15.4
+    },
+    "agents": {
+      "precision_percent": 0.0
+    },
+    "noverify": {
+      "hurts": 11,
+      "neutral": 10,
+      "helps": 2,
+      "precision_percent": 15.4
+    },
+    "advocate_only": {
+      "precision_percent": 0.0
+    },
+    "auditor_only": {
+      "precision_percent": 0.0
+    }
+  },
+  "variants": {
+    "none": {
+      "transcripts": 35,
+      "changed": 0
+    },
+    "agents": {
+      "transcripts": 35,
+      "changed": 0
+    },
+    "noverify": {
+      "transcripts": 35,
+      "changed": 15
+    },
+    "advocate_only": {
+      "transcripts": 35,
+      "changed": 0
+    },
+    "auditor_only": {
+      "transcripts": 35,
+      "changed": 0
+    }
+  },
+  "limitations": [
+    "No verified corrections were accepted.",
+    "Only 35 of 50 selected samples produced arbitration outputs.",
+    "Many tool calls and agent actions failed validation.",
+    "Downstream grading impact has not yet been evaluated."
+  ]
+}
