@@ -1,0 +1,94 @@
+{
+  "pages": 283,
+  "students": 11,
+  "numbers": 7701,
+  "misreads": 680,
+  "base_rate": 0.0883,
+  "signals": {
+    "nll": {
+      "auroc": 0.7425,
+      "auroc_95CI": [
+        0.7036,
+        0.793
+      ],
+      "avg_precision": 0.3374,
+      "precision@1": 0.3534,
+      "recall@1": 0.1471,
+      "precision@3": 0.2604,
+      "recall@3": 0.3235,
+      "precision@5": 0.211,
+      "recall@5": 0.4338
+    },
+    "neg_gap": {
+      "auroc": 0.7416,
+      "auroc_95CI": [
+        0.7028,
+        0.7924
+      ],
+      "avg_precision": 0.3277,
+      "precision@1": 0.3428,
+      "recall@1": 0.1426,
+      "precision@3": 0.2639,
+      "recall@3": 0.3279,
+      "precision@5": 0.211,
+      "recall@5": 0.4338
+    },
+    "ent": {
+      "auroc": 0.7414,
+      "auroc_95CI": [
+        0.7027,
+        0.7908
+      ],
+      "avg_precision": 0.3131,
+      "precision@1": 0.3357,
+      "recall@1": 0.1397,
+      "precision@3": 0.2533,
+      "recall@3": 0.3147,
+      "precision@5": 0.2103,
+      "recall@5": 0.4324
+    },
+    "dent": {
+      "auroc": 0.7546,
+      "auroc_95CI": [
+        0.7152,
+        0.8026
+      ],
+      "avg_precision": 0.3497,
+      "precision@1": 0.3428,
+      "recall@1": 0.1426,
+      "precision@3": 0.2663,
+      "recall@3": 0.3309,
+      "precision@5": 0.221,
+      "recall@5": 0.4544
+    },
+    "n_pieces": {
+      "auroc": 0.5752,
+      "auroc_95CI": [
+        0.5397,
+        0.622
+      ],
+      "avg_precision": 0.127,
+      "precision@1": 0.1378,
+      "recall@1": 0.0574,
+      "precision@3": 0.1396,
+      "recall@3": 0.1735,
+      "precision@5": 0.128,
+      "recall@5": 0.2632
+    },
+    "random": {
+      "auroc": 0.4905,
+      "auroc_95CI": [
+        0.4707,
+        0.5087
+      ],
+      "avg_precision": 0.085,
+      "precision@1": 0.0954,
+      "recall@1": 0.0397,
+      "precision@3": 0.0911,
+      "recall@3": 0.1132,
+      "precision@5": 0.0894,
+      "recall@5": 0.1838
+    }
+  },
+  "alt_recovers_gold_percent": 16.03
+}
