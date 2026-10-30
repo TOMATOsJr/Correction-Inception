@@ -257,3 +257,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ablation: corrected-transcript copies (student work, large; rebuilt by the ablate stage from the logs)
+results/ablation/**/variants/
+results/ablation/**/Outputs/
+results/ablation/**/run_*.log

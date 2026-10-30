@@ -113,6 +113,14 @@ def test_crop_reread_resolves_to_the_claim_reading():
     assert box.call("advocate", "crop_reread", {"span": "8 * 4", "proposed": "3 * 7"})["ok"] is False
 
 
+
+def test_crop_reread_uses_the_callers_resolution():
+    # the reader returns the WHOLE line; only the caller can map it onto span/proposed (this was the
+    # bug that made every interactive re-read unresolvable, so the Arbiter accepted nothing)
+    box = ToolBox(T, RUBRIC, reread=lambda span, proposed: ("V = 3 * 4 = 12", 0.9, "3 * 4"), budget=1)
+    res = box.call("advocate", "crop_reread", {"span": "8 * 4", "proposed": "3 * 4"})
+    assert res["result"]["resolved"] == "3 * 4" and res["result"]["reading"] == "V = 3 * 4 = 12"
+
 # ------------------------------------------------------------------ replay + arbiter
 def test_replay_is_deterministic():
     r1 = [{"exam": "e", "agent": "advocate", "round": 1,

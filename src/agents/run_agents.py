@@ -27,6 +27,13 @@ Variants written by `decide` (same folder layout as the transcribers, so every s
   advocate_only  / auditor_only   (ablation: one agent)
   selfcorrect    (only from the one-shot path) one-pass LLM repair
 
+ABLATIONS (scripts/run_ablation.sh, docs/ABLATION.md):
+  --items CSV     run on a subset of exams;  --agents advocate   one agent alone (true single-agent control)
+  verify          re-read EVERY claim the Arbiter rules on with one reader configuration
+                  (--adapter or not, --no-mask or not) -> verify_<tag>.jsonl
+  ablate          CPU: Arbiter for every evidence mode x theta x verify tag -> variants/<variant>/,
+                  ablate_summary.json (decisions, claim precision, verifier accuracy vs the expert)
+
   python run_agents.py r1    --target-root R --model-dir M --name N --out OUT --llm hf-text:Qwen/Qwen2.5-7B-Instruct
   python run_agents.py tools --round 1 [same args] --images IMG --reader hf:... --adapter A
   python run_agents.py cross [same args]
@@ -46,9 +53,11 @@ import re
 import sys
 import threading
 import time
-from collections import Counter
+from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from pathlib import Path
+from typing import Callable
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -59,8 +68,9 @@ from tqdm import tqdm  # noqa: E402
 
 from agents import _parse_claims, agent_prompt, agent_prompt_r1, agent_prompt_r2, agent_prompt_r3  # noqa: E402
 from arith_consistency import evaluate, latex_to_expr  # noqa: E402
-from core import ACCEPT, ArbiterConfig, Claim, apply_accepted, arbitrate, changed_number, span_check  # noqa: E402
-from protocol import (Ledger, ToolBox, apply_actions, build_ledger, conflict_groups,  # noqa: E402
+from core import (ACCEPT, ArbiterConfig, Claim, apply_accepted, arbitrate, changed_number,  # noqa: E402
+                  consistency_check, span_check)
+from protocol import (LEDGERS, Ledger, ToolBox, apply_actions, build_ledger, conflict_groups,  # noqa: E402
                       ledger_json, parse_actions, parse_single_action, parse_tool_requests)
 from evaluate_recognition import RECTIFIED, load_markdown  # noqa: E402
 from grade_impact import rubric_path  # noqa: E402
@@ -126,7 +136,7 @@ def phase_claims(a):
             continue
         rubric = json.loads(rp.read_text(encoding="utf-8"))
         hints = hints_for(t)
-        for agent in ("advocate", "auditor"):
+        for agent in a.agents:
             cid = f"{key_of(hw, st, qid)}|{agent}"
             if cid not in done:
                 jobs.append((cid, agent, t, rubric, hints))
@@ -219,7 +229,7 @@ def phase_reread(a):
     reader = None
     if a.reader != "mock":
         from run_ocr import HFReader
-        reader = HFReader(a.reader[3:], a.adapter, 1280 * 28 * 28, 96)
+        reader = HFReader(a.reader[3:], a.adapter, a.reread_max_pixels, 96)
     print(f"{len(todo)} claims to re-read ({len(done)} done before)")
     deadline = float(os.environ.get("LMA_DEADLINE", "0") or 0)
     with open(path, "a", encoding="utf-8") as f:
@@ -403,7 +413,8 @@ def make_reread(a, hw, st, qid, reader, idx):
         if not masked or img is None:
             return "", 0.0
         from PIL import Image
-        return reader.read_with_conf(REREAD_PROMPT.format(masked=masked), Image.open(img).convert("RGB"))
+        reading, conf = reader.read_with_conf(REREAD_PROMPT.format(masked=masked), Image.open(img).convert("RGB"))
+        return reading, conf, resolve(reading, masked, span, proposed)
     return reread
 
 
@@ -428,7 +439,7 @@ def phase_r1(a):
     done = read_jsonl(out / "r1.jsonl")
     cache = Cache(Path(a.out) / "agents_llm_cache.sqlite") if a.llm != "mock" else None
     jobs = [(exam, agent, t, rubric, hints) for exam, hw, st, qid, t, rubric, hints in _exam_jobs(a)
-            for agent in ("advocate", "auditor") if f"{exam}|{agent}" not in done]
+            for agent in a.agents if f"{exam}|{agent}" not in done]
     print(f"{len(jobs)} round-1 calls ({len(done)} done before)")
 
     def one(job):
@@ -456,7 +467,7 @@ def phase_tools(a):
     reader = None
     if a.reader != "mock":
         from run_ocr import HFReader
-        reader = HFReader(a.reader[3:], a.adapter, 1280 * 28 * 28, 96)
+        reader = HFReader(a.reader[3:], a.adapter, a.reread_max_pixels, 96)
     todo = []
     for rec in read_jsonl(out / f"{src}.jsonl").values():
         for i, req in enumerate(rec.get("tool_requests") or []):
@@ -492,7 +503,7 @@ def phase_cross(a):
         led = exam_ledger(out, exam, t)
         if not led.claims:
             continue  # nobody filed anything: nothing to cross-examine
-        for agent in ("advocate", "auditor"):
+        for agent in a.agents:
             if f"{exam}|{agent}" not in done:
                 jobs.append((exam, agent, t, rubric, hints, led.render()))
     print(f"{len(jobs)} round-2 calls ({len(done)} done before)")
@@ -646,7 +657,7 @@ def phase_auto(a):
     reader = None
     if a.reader != "mock":
         from run_ocr import HFReader
-        reader = HFReader(a.reader[3:], a.adapter, 1280 * 28 * 28, 96, device=a.reader_device)
+        reader = HFReader(a.reader[3:], a.adapter, a.reread_max_pixels, 96, device=a.reader_device)
         print(f"reader on cuda:{a.reader_device}; agents on cuda:{a.agent_device}")
     reader_lock = threading.Lock()
     idx = page_index(Path(a.images)) if a.images else {}
@@ -681,7 +692,7 @@ def phase_auto(a):
             return call_llm(prompt, a.llm, temperature=0.0, cache=cache)
 
         # ---- round 1: independent filing
-        for agent in ("advocate", "auditor"):
+        for agent in a.agents:
             raw = ask(agent_prompt_r1(agent, t, rubric, hints, a.max_claims, a.tool_budget))
             recs["r1"].append({"id": f"{exam}|{agent}", "exam": exam, "agent": agent, "round": 1, "raw": raw[:4000],
                                "claims": parse_actions(raw), "tool_requests": parse_tool_requests(raw),
@@ -691,7 +702,7 @@ def phase_auto(a):
 
         # ---- round 2: cross-examination on the shared ledger
         if led.claims:
-            for agent in ("advocate", "auditor"):
+            for agent in a.agents:
                 raw = ask(agent_prompt_r2(agent, t, rubric, led.render(), hints, a.tool_budget))
                 recs["r2"].append({"id": f"{exam}|{agent}", "exam": exam, "agent": agent, "round": 2, "raw": raw[:4000],
                                    "actions": parse_actions(raw), "tool_requests": parse_tool_requests(raw),
@@ -727,10 +738,206 @@ def phase_auto(a):
         f.close()
 
 
+# ================================================================== ablations
+# verify  re-reads EVERY claim the Arbiter will rule on with ONE reader configuration (fine-tuned/base adapter,
+#         masked/unmasked line), whatever the agents asked for, so systems and readers are compared on the same
+#         footing. One verify_<tag>.jsonl per configuration.
+# ablate  CPU only: the Arbiter over each run's claims for every evidence mode x theta x verify tag, the claim
+#         precision of what it accepted, and how often each reader configuration picks the expert's value.
+NOMASK_PROMPT = ("Find the handwritten line on this page that matches this transcription:\n{line}\n\n"
+                 "Write that single line exactly as the student wrote it. Copy any mistakes. Output only the line.")
+EVIDENCE_MODES = {"full": {}, "reread_only": {"use_consistency": False}, "consistency_only": {"use_reread": False}}
+THETAS = (0.5, 0.6, 0.7, 0.8, 0.85, 0.9, 0.95)
+
+
+def resolve_unmasked(reading: str, line: str, span: str, proposed: str) -> str:
+    """Unmasked re-read: the reader SAW the transcribed value. Did it keep it (span) or replace it (proposed)?"""
+    ch = changed_number(span, proposed)
+    if ch is None:
+        return reading
+    old, new = ch
+    got, shown = Counter(_NUM.findall(reading)), Counter(_NUM.findall(line))
+    gained_new, kept_old = got[new] > shown[new], got[old] >= shown[old]
+    if gained_new and not kept_old:
+        return proposed
+    if kept_old and not gained_new:
+        return span
+    return reading
+
+
+def run_claims(out: Path) -> Callable[[str, str], list[tuple[str, Claim]]]:
+    """(exam, transcript) -> the claims the Arbiter rules on, with stable ids: the final live claims of an
+    interactive ledger (r1.jsonl present) or every one-shot claim (claims.jsonl). Files are read once."""
+    if (out / "r1.jsonl").exists():
+        recs = {k: defaultdict(list) for k in LEDGERS}
+        for k in LEDGERS:
+            for r in read_jsonl(out / f"{k}.jsonl").values():
+                recs[k][r.get("exam")].append(r)
+
+        def interactive(exam, t):
+            led = build_ledger(exam, t, recs["r1"][exam], recs["tools"][exam], recs["r2"][exam] + recs["r3"][exam])
+            return [(f"{exam}|{c.cid}", c.to_claim()) for c in led.live()]
+        return interactive
+    claims = read_jsonl(out / "claims.jsonl")
+
+    def oneshot(exam, t):
+        rows = []
+        for agent in ("advocate", "auditor"):
+            for i, c in enumerate(claims.get(f"{exam}|{agent}", {}).get("claims", [])):
+                rows.append((f"{exam}|{agent}|{i}",
+                             Claim(**{**{k: v for k, v in c.items() if k in Claim.__dataclass_fields__}, "agent": agent})))
+        return rows
+    return oneshot
+
+
+def phase_verify(a):
+    from PIL import Image
+
+    out = Path(a.out) / a.name
+    path = out / f"verify_{a.verify_tag}.jsonl"
+    done = {k for k, r in read_jsonl(path).items() if not r.get("error")}  # failed rows are retried
+    idx = page_index(Path(a.images))
+    claims_of = run_claims(out)
+    todo = []
+    for hw, st, qid in items(a.limit):
+        t = load_markdown(Path(a.target_root), hw, st, qid, a.model_dir)
+        if t is None:
+            continue
+        todo += [(rid, hw, st, qid, t, c) for rid, c in claims_of(key_of(hw, st, qid), t) if rid not in done]
+    reader = None
+    if a.reader != "mock":
+        from run_ocr import HFReader
+        reader = HFReader(a.reader[3:], a.adapter, a.reread_max_pixels, 96)
+    print(f"{len(todo)} claims to verify as {a.verify_tag!r} ({len(done)} done before)")
+    with open(path, "a", encoding="utf-8") as f:
+        for rid, hw, st, qid, t, c in tqdm(todo, desc=f"verify {a.name} {a.verify_tag}"):
+            rec = {"id": rid, "reading": "", "conf": 0.0, "resolved": ""}
+            ch = changed_number(c.span, c.proposed)
+            if span_check(t, c.span):
+                rec.update(consistency_check(t, c.span, c.proposed))
+            page, line = page_of_span(Path(a.target_root), hw, st, qid, a.model_dir, c.span) if ch else (None, None)
+            img = idx.get((hw, st, page)) if page else None
+            shown = (line if a.no_mask else masked_line(line, c.span, c.proposed)) if line else None
+            if not shown or img is None:
+                rec["note"] = "unverifiable: not a single-number change, or line/page not found"
+            else:
+                try:
+                    if reader is None:  # mock: the page shows the proposed value
+                        reading, conf = (shown if a.no_mask else shown.replace("?", ch[1], 1)), 0.9
+                    else:
+                        prompt = NOMASK_PROMPT.format(line=shown) if a.no_mask else REREAD_PROMPT.format(masked=shown)
+                        reading, conf = reader.read_with_conf(prompt, Image.open(img).convert("RGB"))
+                    rec.update(shown=shown, reading=reading, conf=round(conf, 4),
+                               resolved=resolve_unmasked(reading, shown, c.span, c.proposed) if a.no_mask
+                               else resolve(reading, shown, c.span, c.proposed))
+                except Exception as e:  # e.g. CUDA OOM on a huge page: log it, re-running retries it
+                    rec["error"] = f"{type(e).__name__}: {str(e)[:160]}"
+                    try:
+                        import torch
+                        torch.cuda.empty_cache()
+                    except Exception:
+                        pass
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+            f.flush()
+
+
+def phase_ablate(a):
+    out = Path(a.out) / a.name
+    tags = sorted(p.stem[len("verify_"):] for p in out.glob("verify_*.jsonl"))
+    if not tags:
+        sys.exit(f"no verify_*.jsonl in {out}: run the verify phase first")
+    main_tag = a.main_tag if a.main_tag in tags else tags[0]
+    ev = {tag: read_jsonl(out / f"verify_{tag}.jsonl") for tag in tags}
+    write_thetas = [float(x) for x in a.write_thetas.split(",") if x.strip()]
+    claims_of = run_claims(out)
+    var_root = out / "variants"
+    configs = defaultdict(Counter)   # "<mode>__<tag>__t<theta>" -> decisions + precision of accepted claims
+    verifier = defaultdict(Counter)  # tag -> how often the re-read picks the expert's value
+    n_exams = n_claims = 0
+
+    def tally(cnt: Counter, cs, helps):
+        for c in cs:
+            h = helps[c.evidence["rid"]]
+            cnt["helps" if h else ("hurts" if h is False else "neutral")] += 1
+
+    for hw, st, qid in items(a.limit):
+        exam = key_of(hw, st, qid)
+        t = load_markdown(Path(a.target_root), hw, st, qid, a.model_dir)
+        if t is None:
+            continue
+        gold = load_markdown(Path(a.edu_data) / RECTIFIED, hw, st, qid, "gemini-2.5-pro") or ""
+        claims = claims_of(exam, t)
+        n_exams += 1
+        n_claims += len(claims)
+        helps = {rid: claim_helps(gold, t, c.span, c.proposed) for rid, c in claims}
+        texts = {"none": t}
+        nv = [replace(c, evidence={"rid": rid}, decision=ACCEPT) for rid, c in claims
+              if span_check(t, c.span) and changed_number(c.span, c.proposed) is not None]
+        texts["noverify"] = apply_accepted(t, nv)
+        configs["noverify"]["accept"] += len(nv)
+        tally(configs["noverify"], nv, helps)
+        for tag in tags:
+            def with_evidence(rid, c):
+                r = ev[tag].get(rid) or {}
+                return replace(c, decision=None, evidence={
+                    "rid": rid, "reread": r.get("resolved") or r.get("reading", ""), "reread_conf": float(r.get("conf") or 0.0),
+                    **{k: int(r.get(k) or 0) for k in ("support", "n_constraints", "reuse_signal")}})
+
+            for rid, c in claims:   # verifier accuracy: does the re-read side with the expert transcript?
+                r, h = ev[tag].get(rid) or {}, helps[rid]
+                v = verifier[tag]
+                if not r.get("reading"):
+                    v["no_reading"] += 1
+                    continue
+                pick = "proposed" if r["resolved"] == c.proposed else "span" if r["resolved"] == c.span else "unresolved"
+                v[f"picked_{pick}"] += 1
+                v["conf_sum_x1000"] += int(1000 * float(r.get("conf") or 0.0))
+                if h is not None and pick != "unresolved":
+                    v["evaluable"] += 1
+                    v["correct"] += int((pick == "proposed") == h)
+
+            for mode, kw in EVIDENCE_MODES.items():
+                for th in THETAS:
+                    decided = arbitrate([with_evidence(rid, c) for rid, c in claims], t, lambda c: ("", 0.0),
+                                        ArbiterConfig(theta=th, **kw), use_existing_evidence=True)
+                    cnt = configs[f"{mode}__{tag}__t{th}"]
+                    for c in decided:
+                        cnt[c.decision] += 1
+                    tally(cnt, [c for c in decided if c.decision == ACCEPT], helps)
+                    # variants for the scorers: every reader tag at the main theta (full evidence), every evidence
+                    # mode for the main tag, and the extra thetas for the main tag
+                    if th == a.theta and (mode == "full" or tag == main_tag):
+                        texts[f"{mode}__{tag}"] = apply_accepted(t, decided)
+                    elif mode == "full" and tag == main_tag and th in write_thetas:
+                        texts[f"full__{tag}__t{th}"] = apply_accepted(t, decided)
+            if tag == main_tag:   # one agent's claims out of the JOINT run (compare with the solo runs)
+                for ag in ("advocate", "auditor"):
+                    sub = [with_evidence(rid, c) for rid, c in claims if c.agent == ag]  # written for EVERY exam
+                    texts[f"posthoc_{ag}__{tag}"] = apply_accepted(
+                        t, arbitrate(sub, t, lambda c: ("", 0.0), ArbiterConfig(theta=a.theta), use_existing_evidence=True))
+        for v, text in texts.items():
+            write_variant(var_root, v, hw, st, qid, a.model_dir, text)
+
+    def prec(c: Counter) -> float | None:
+        return round(100 * c["helps"] / (c["helps"] + c["hurts"]), 1) if c["helps"] + c["hurts"] else None
+
+    summary = {
+        "name": a.name, "theta": a.theta, "main_tag": main_tag, "tags": tags, "exams": n_exams, "claims": n_claims,
+        "configs": {k: {**dict(v), "precision_percent": prec(v)} for k, v in sorted(configs.items())},
+        "verifier": {tag: {**{k: v for k, v in c.items() if k != "conf_sum_x1000"},
+                           "mean_conf": round(c["conf_sum_x1000"] / 1000 / max(1, n_claims - c["no_reading"]), 4),
+                           "accuracy_vs_expert_percent": round(100 * c["correct"] / c["evaluable"], 1) if c["evaluable"] else None}
+                     for tag, c in verifier.items()},
+    }
+    (out / "ablate_summary.json").write_text(json.dumps(summary, indent=2))
+    print(json.dumps({k: summary[k] for k in ("name", "exams", "claims", "verifier")}, indent=2))
+    print("variants:", ", ".join(sorted(p.name for p in var_root.iterdir())) if var_root.exists() else "(none)")
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("phase", choices=["claims", "reread", "decide", "selfcorrect",
-                                     "r1", "tools", "cross", "rebut", "auto"])
+                                     "r1", "tools", "cross", "rebut", "auto", "verify", "ablate"])
     p.add_argument("--target-root", required=True)
     p.add_argument("--model-dir", required=True)
     p.add_argument("--name", required=True)
@@ -750,7 +957,19 @@ def main():
     p.add_argument("--concurrency", type=int, default=6, help="exams in flight at once (auto phase)")
     p.add_argument("--workers", type=int, default=16)
     p.add_argument("--limit", type=int)
+    p.add_argument("--items", help="CSV of exams to run on (Homework ID, Student ID, Question ID); "
+                                   "default: every exam with an expert transcript")
+    p.add_argument("--agents", default="advocate,auditor", help="which agents take part (e.g. 'advocate' alone)")
+    p.add_argument("--reread-max-pixels", type=int, default=1280 * 28 * 28, help="page resolution for re-reads")
+    p.add_argument("--verify-tag", default="ft_mask", help="verify phase: name of this reader configuration")
+    p.add_argument("--no-mask", action="store_true", help="verify phase: show the reader the disputed value")
+    p.add_argument("--main-tag", default="ft_mask", help="ablate phase: verify tag used for the system variants")
+    p.add_argument("--write-thetas", default="0.5,0.7,0.95", help="ablate phase: extra thetas written as variants")
     a = p.parse_args()
+    a.agents = tuple(x.strip() for x in a.agents.split(",") if x.strip())
+    if a.items:
+        global ITEMS
+        ITEMS = Path(a.items)
     try:
         from dotenv import load_dotenv
         load_dotenv(ROOT / ".env")
@@ -761,7 +980,7 @@ def main():
         return
     {"claims": phase_claims, "reread": phase_reread, "decide": phase_decide, "selfcorrect": phase_selfcorrect,
      "r1": phase_r1, "tools": phase_tools, "cross": phase_cross, "rebut": phase_rebut,
-     "auto": phase_auto}[a.phase](a)
+     "auto": phase_auto, "verify": phase_verify, "ablate": phase_ablate}[a.phase](a)
 
 
 if __name__ == "__main__":

@@ -122,7 +122,7 @@ _hf_lock = threading.Lock()
 HF_BATCH = int(os.environ.get("HF_BATCH", "8"))
 # padded tokens per batch (longest prompt + 1024 new) x batch size; ~16k fits a 7B 4-bit model on a 15 GB T4
 HF_TOKEN_BUDGET = int(os.environ.get("HF_TOKEN_BUDGET", "16000"))
-MAX_NEW = 1024
+MAX_NEW = int(os.environ.get("HF_MAX_NEW_TOKENS", "1024"))  # raise for full-transcript outputs (selfcorrect)
 
 
 def _hf_worker(mid: str, device: int, q):

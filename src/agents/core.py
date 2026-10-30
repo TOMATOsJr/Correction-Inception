@@ -115,6 +115,8 @@ def retrieve_rubric(rubric: dict, code: str) -> dict | None:
 class ArbiterConfig:
     theta: float = 0.85          # minimum re-read confidence to accept
     require_consistency_when_available: bool = True
+    use_reread: bool = True       # ablation: False = decide from the student's later work alone
+    use_consistency: bool = True  # ablation: False = decide from the re-read alone
 
 
 def _overlapping(a: str, b: str) -> bool:
@@ -161,7 +163,19 @@ def arbitrate(claims: list[Claim], transcript: str,
         else:
             reading, conf = reread(c)
             cons = consistency_check(transcript, c.span, c.proposed)
+        if not cfg.use_consistency:
+            cons = {"support": 0, "n_constraints": 0, "reuse_signal": 0}
+        if not cfg.use_reread:
+            reading, conf = "", 0.0
         c.evidence = {**keep, "reread": reading, "reread_conf": conf, **cons}
+        if not cfg.use_reread:
+            if cons["support"] > 0:
+                c.decision, c.decision_reason = ACCEPT, "later work supports claim (re-read disabled)"
+            elif cons["support"] < 0:
+                c.decision, c.decision_reason = REJECT, "later work contradicts claim (re-read disabled)"
+            else:
+                c.decision, c.decision_reason = ESCALATE, "no consistency evidence (re-read disabled)"
+            continue
         matches = re.sub(r"\s+", "", reading) == re.sub(r"\s+", "", c.proposed)
         keeps_span = re.sub(r"\s+", "", reading) == key
         if matches and conf >= cfg.theta and cons["support"] >= 0:

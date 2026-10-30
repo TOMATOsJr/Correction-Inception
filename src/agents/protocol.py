@@ -124,11 +124,14 @@ class ToolBox:
                 if changed_number(span, proposed) is None:
                     return {"tool": name, "args": args, "ok": False,
                             "error": "crop_reread needs a claim that changes exactly one number"}
-                reading, conf = self.reread(span, proposed)
+                # reread may return (reading, conf) or (reading, conf, resolved): the reading is usually the
+                # whole line, so only the caller (which knows the masked line) can map it onto span/proposed
+                reading, conf, *resolved = self.reread(span, proposed)
                 return {"tool": name, "args": args, "ok": True,
                         "result": {"reading": reading, "conf": float(conf),
-                                   "resolved": (proposed if _norm(reading) == _norm(proposed) else
-                                                span if _norm(reading) == _norm(span) else reading)}}
+                                   "resolved": resolved[0] if resolved else
+                                   (proposed if _norm(reading) == _norm(proposed) else
+                                    span if _norm(reading) == _norm(span) else reading)}}
         except Exception as e:  # a tool fault must never kill the run
             return {"tool": name, "args": args, "ok": False, "error": f"{type(e).__name__}: {str(e)[:160]}"}
         return {"tool": name, "args": args, "ok": False, "error": "unreachable"}

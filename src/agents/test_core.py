@@ -3,7 +3,8 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from core import ACCEPT, ESCALATE, REJECT, Claim, apply_accepted, arbitrate, consistency_check, span_check  # noqa: E402
+from core import (ACCEPT, ESCALATE, REJECT, ArbiterConfig, Claim, apply_accepted, arbitrate,  # noqa: E402
+                  consistency_check, span_check)
 from protocol import parse_actions, parse_tool_requests  # noqa: E402
 
 # Student wrote R = 2+3 = 6 (slip) and carried 6 forward; the transcriber silently corrected it to 5.
@@ -56,6 +57,28 @@ def test_low_confidence_escalates():
     c = Claim("auditor", "M", "2 + 3 = 5", "2 + 3 = 6")
     assert arbitrate([c], T, reread=lambda cl: ("2 + 3 = 6", 0.4))[0].decision == ESCALATE
 
+
+
+def test_reread_only_ignores_contradicting_later_work():
+    # the re-read backs the claim but the student's later work contradicts it: full rules escalate,
+    # re-read-only accepts (the consistency check is switched off)
+    c = lambda: Claim("auditor", "M", "2 + 3 = 6", "2 + 3 = 5")  # noqa: E731
+    t = "R = 2 + 3 = 6\nI = 12 / 6 = 2"
+    assert arbitrate([c()], t, reread=lambda cl: ("2 + 3 = 5", 0.95))[0].decision == ESCALATE
+    out = arbitrate([c()], t, reread=lambda cl: ("2 + 3 = 5", 0.95), cfg=ArbiterConfig(use_consistency=False))
+    assert out[0].decision == ACCEPT
+
+
+def test_consistency_only_ignores_the_reread():
+    # later work supports the claim, the re-read says nothing: consistency-only accepts on later work alone
+    c = lambda: Claim("auditor", "M", "2 + 3 = 5", "2 + 3 = 6")  # noqa: E731
+    assert arbitrate([c()], T, reread=lambda cl: ("", 0.0))[0].decision == ESCALATE
+    out = arbitrate([c()], T, reread=lambda cl: ("", 0.0), cfg=ArbiterConfig(use_reread=False))
+    assert out[0].decision == ACCEPT and out[0].evidence["reread"] == ""
+    # ... and rejects when the later work contradicts the claim
+    bad = Claim("advocate", "M", "2 + 3 = 6", "2 + 3 = 5")
+    assert arbitrate([bad], "R = 2 + 3 = 6\nI = 12 / 6 = 2", reread=lambda cl: ("2 + 3 = 5", 0.99),
+                     cfg=ArbiterConfig(use_reread=False))[0].decision == REJECT
 
 # ------------------------------------------------------------------ prompt parsing (protocol.py)
 def test_parse_actions_single_backslash_latex():
