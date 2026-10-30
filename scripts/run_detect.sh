@@ -25,6 +25,7 @@ QWEN_ROOT="${LMA_QWEN_ROOT:-local_results/results/Outputs/qwen3b_ft}"
 ADAPTER="${LMA_ADAPTER:-local_results/results/reader_lora}"
 OUT="${LMA_OUT:-results/detect}"
 LIMIT="${LMA_LIMIT:+--limit $LMA_LIMIT}"
+READER_DEVICE="${LMA_READER_DEVICE:-1}"
 export HF_HOME="${HF_HOME-/scratch/jayanth.raju/hf_cache}"
 
 mkdir -p "$OUT"
@@ -43,7 +44,7 @@ run() {  # name target_root model_dir reader_tag [adapter args...]
 
 python src/detect/test_detect.py
 run qwen3b_ft "$QWEN_ROOT" qwen3b_ft ftreader --adapter "$ADAPTER"
-run gemini25 "$EDU/Observationset_Final/v6_Gemini_2p5" gemini-2.5-pro ftreader --adapter "$ADAPTER"
+# run gemini25 "$EDU/Observationset_Final/v6_Gemini_2p5" gemini-2.5-pro ftreader --adapter "$ADAPTER"
 run qwen3b_ft "$QWEN_ROOT" qwen3b_ft basereader
-run gemini25 "$EDU/Observationset_Final/v6_Gemini_2p5" gemini-2.5-pro basereader
+# run gemini25 "$EDU/Observationset_Final/v6_Gemini_2p5" gemini-2.5-pro basereader
 echo "=== done: $OUT/*/detection_metrics.json"
