@@ -1,0 +1,13 @@
+{
+  "pages": 292,
+  "questions_skipped_page_mismatch": 1,
+  "tokens": 27224,
+  "token_err_rate": 0.3097,
+  "num_tokens": 7622,
+  "num_err": 1806,
+  "num_err_rate": 0.2369,
+  "num_misread": 1068,
+  "num_match": 5816,
+  "num_ins": 738,
+  "num_misread_rate_vs_match": 0.1551
+}

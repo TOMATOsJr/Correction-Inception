@@ -1,0 +1,94 @@
+{
+  "pages": 280,
+  "students": 11,
+  "numbers": 6884,
+  "misreads": 1068,
+  "base_rate": 0.1551,
+  "signals": {
+    "nll": {
+      "auroc": 0.6726,
+      "auroc_95CI": [
+        0.6083,
+        0.747
+      ],
+      "avg_precision": 0.3244,
+      "precision@1": 0.3,
+      "recall@1": 0.0787,
+      "precision@3": 0.274,
+      "recall@3": 0.2135,
+      "precision@5": 0.2416,
+      "recall@5": 0.3099
+    },
+    "neg_gap": {
+      "auroc": 0.672,
+      "auroc_95CI": [
+        0.6083,
+        0.7472
+      ],
+      "avg_precision": 0.3239,
+      "precision@1": 0.3107,
+      "recall@1": 0.0815,
+      "precision@3": 0.274,
+      "recall@3": 0.2135,
+      "precision@5": 0.2453,
+      "recall@5": 0.3146
+    },
+    "ent": {
+      "auroc": 0.6694,
+      "auroc_95CI": [
+        0.6057,
+        0.7439
+      ],
+      "avg_precision": 0.3102,
+      "precision@1": 0.275,
+      "recall@1": 0.0721,
+      "precision@3": 0.2524,
+      "recall@3": 0.1966,
+      "precision@5": 0.2328,
+      "recall@5": 0.2987
+    },
+    "dent": {
+      "auroc": 0.6821,
+      "auroc_95CI": [
+        0.6194,
+        0.7566
+      ],
+      "avg_precision": 0.3253,
+      "precision@1": 0.2893,
+      "recall@1": 0.0758,
+      "precision@3": 0.2752,
+      "recall@3": 0.2144,
+      "precision@5": 0.246,
+      "recall@5": 0.3155
+    },
+    "n_pieces": {
+      "auroc": 0.5926,
+      "auroc_95CI": [
+        0.5502,
+        0.6472
+      ],
+      "avg_precision": 0.231,
+      "precision@1": 0.1786,
+      "recall@1": 0.0468,
+      "precision@3": 0.1815,
+      "recall@3": 0.1414,
+      "precision@5": 0.181,
+      "recall@5": 0.2322
+    },
+    "random": {
+      "auroc": 0.5008,
+      "auroc_95CI": [
+        0.4768,
+        0.523
+      ],
+      "avg_precision": 0.1598,
+      "precision@1": 0.1679,
+      "recall@1": 0.044,
+      "precision@3": 0.143,
+      "recall@3": 0.1114,
+      "precision@5": 0.1474,
+      "recall@5": 0.1891
+    }
+  },
+  "alt_recovers_gold_percent": 14.51
+}

@@ -1,0 +1,94 @@
+{
+  "pages": 290,
+  "students": 11,
+  "numbers": 10310,
+  "misreads": 116,
+  "base_rate": 0.0113,
+  "signals": {
+    "nll": {
+      "auroc": 0.8165,
+      "auroc_95CI": [
+        0.7643,
+        0.8726
+      ],
+      "avg_precision": 0.0933,
+      "precision@1": 0.0931,
+      "recall@1": 0.2328,
+      "precision@3": 0.0495,
+      "recall@3": 0.3707,
+      "precision@5": 0.0388,
+      "recall@5": 0.4828
+    },
+    "neg_gap": {
+      "auroc": 0.8156,
+      "auroc_95CI": [
+        0.7636,
+        0.8723
+      ],
+      "avg_precision": 0.1166,
+      "precision@1": 0.0828,
+      "recall@1": 0.2069,
+      "precision@3": 0.053,
+      "recall@3": 0.3966,
+      "precision@5": 0.0381,
+      "recall@5": 0.4741
+    },
+    "ent": {
+      "auroc": 0.777,
+      "auroc_95CI": [
+        0.7381,
+        0.8172
+      ],
+      "avg_precision": 0.0365,
+      "precision@1": 0.0414,
+      "recall@1": 0.1034,
+      "precision@3": 0.0369,
+      "recall@3": 0.2759,
+      "precision@5": 0.0284,
+      "recall@5": 0.3534
+    },
+    "dent": {
+      "auroc": 0.7927,
+      "auroc_95CI": [
+        0.7549,
+        0.837
+      ],
+      "avg_precision": 0.0537,
+      "precision@1": 0.0414,
+      "recall@1": 0.1034,
+      "precision@3": 0.038,
+      "recall@3": 0.2845,
+      "precision@5": 0.0291,
+      "recall@5": 0.3621
+    },
+    "n_pieces": {
+      "auroc": 0.6104,
+      "auroc_95CI": [
+        0.557,
+        0.663
+      ],
+      "avg_precision": 0.0253,
+      "precision@1": 0.0276,
+      "recall@1": 0.069,
+      "precision@3": 0.0219,
+      "recall@3": 0.1638,
+      "precision@5": 0.0201,
+      "recall@5": 0.25
+    },
+    "random": {
+      "auroc": 0.4623,
+      "auroc_95CI": [
+        0.4346,
+        0.4973
+      ],
+      "avg_precision": 0.0105,
+      "precision@1": 0.0103,
+      "recall@1": 0.0259,
+      "precision@3": 0.015,
+      "recall@3": 0.1121,
+      "precision@5": 0.0125,
+      "recall@5": 0.1552
+    }
+  },
+  "alt_recovers_gold_percent": 21.55
+}

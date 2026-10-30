@@ -1,0 +1,94 @@
+{
+  "pages": 280,
+  "students": 11,
+  "numbers": 6884,
+  "misreads": 1068,
+  "base_rate": 0.1551,
+  "signals": {
+    "nll": {
+      "auroc": 0.6966,
+      "auroc_95CI": [
+        0.6432,
+        0.7592
+      ],
+      "avg_precision": 0.3574,
+      "precision@1": 0.3643,
+      "recall@1": 0.0955,
+      "precision@3": 0.2716,
+      "recall@3": 0.2116,
+      "precision@5": 0.2438,
+      "recall@5": 0.3127
+    },
+    "neg_gap": {
+      "auroc": 0.6956,
+      "auroc_95CI": [
+        0.6428,
+        0.758
+      ],
+      "avg_precision": 0.3532,
+      "precision@1": 0.3714,
+      "recall@1": 0.0974,
+      "precision@3": 0.274,
+      "recall@3": 0.2135,
+      "precision@5": 0.2431,
+      "recall@5": 0.3118
+    },
+    "ent": {
+      "auroc": 0.6965,
+      "auroc_95CI": [
+        0.6426,
+        0.7583
+      ],
+      "avg_precision": 0.352,
+      "precision@1": 0.3286,
+      "recall@1": 0.0861,
+      "precision@3": 0.28,
+      "recall@3": 0.2182,
+      "precision@5": 0.2489,
+      "recall@5": 0.3193
+    },
+    "dent": {
+      "auroc": 0.715,
+      "auroc_95CI": [
+        0.6587,
+        0.7759
+      ],
+      "avg_precision": 0.3816,
+      "precision@1": 0.3429,
+      "recall@1": 0.0899,
+      "precision@3": 0.2933,
+      "recall@3": 0.2285,
+      "precision@5": 0.2518,
+      "recall@5": 0.323
+    },
+    "n_pieces": {
+      "auroc": 0.5926,
+      "auroc_95CI": [
+        0.5502,
+        0.6472
+      ],
+      "avg_precision": 0.231,
+      "precision@1": 0.1786,
+      "recall@1": 0.0468,
+      "precision@3": 0.1815,
+      "recall@3": 0.1414,
+      "precision@5": 0.181,
+      "recall@5": 0.2322
+    },
+    "random": {
+      "auroc": 0.5008,
+      "auroc_95CI": [
+        0.4768,
+        0.523
+      ],
+      "avg_precision": 0.1598,
+      "precision@1": 0.1679,
+      "recall@1": 0.044,
+      "precision@3": 0.143,
+      "recall@3": 0.1114,
+      "precision@5": 0.1474,
+      "recall@5": 0.1891
+    }
+  },
+  "alt_recovers_gold_percent": 13.76
+}
