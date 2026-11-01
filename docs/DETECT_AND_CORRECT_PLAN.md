@@ -49,7 +49,7 @@ About 7% of misreads get ≥ 99.99% confidence: no confidence threshold reaches 
 
 ---
 
-## 2. Better selector: a learned misread probability (planned)
+## 2. Better selector: a learned misread probability (built: `src/detect/selector.py`)
 
 **Problem.** One confidence cut-off treats every page alike. 0.95 is suspicious on a clean page and normal on a
 messy one, so reaching 80% recall flags 65% of all numbers.
@@ -69,7 +69,7 @@ messy one, so reaching 80% recall flags 65% of all numbers.
 4. **Score** every number with the learned misread probability.
 5. **Pick the cut-off** for the target recall (80%) on training students, and apply it to the held-out ones.
 
-**First result** (Colab Qwen scores, held-out students):
+**First exploration** (Colab Qwen scores, held-out students, cut-off picked after the fact):
 
 | Detector | Recall | Numbers flagged | Flags that are real |
 |---|---|---|---|
@@ -81,8 +81,19 @@ messy one, so reaching 80% recall flags 65% of all numbers.
 Strongest clues: page length, digit uncertainty, page-level doubt, position, neighbours' doubt. Misreads cluster on
 pages the reader struggles with overall.
 
-**To do.** Code it as `src/detect/selector.py`. Re-run it on the Ada scores and on Gemini transcripts, whose
-errors look different. Later, add more clues:
+**As built** (numpy logistic regression; the cut-off is chosen from inner held-out predictions on the training
+students, because in-sample scores undershoot the recall on new students). Colab scores, target recall 80%:
+
+| Transcripts | Detector | Held-out recall | Numbers flagged | Flags that are real |
+|---|---|---|---|---|
+| Qwen | selector | 81% | **44%** (10.7 per page) | **29%** |
+| Qwen | confidence cut-off | 80% | 64% (15.7 per page) | 19% |
+| Gemini | selector | 83% | 41% | 2.3% |
+| Gemini | confidence cut-off | 81% | 32% | 2.9% |
+
+On Gemini (only 116 misreads to learn from) the selector is no better than the plain cut-off.
+
+**To do.** Re-run on the Ada scores. Later, add more clues:
 - a second reading: the other transcriber, the base vs the fine-tuned reader, sampled transcripts;
 - re-scoring flagged lines at higher resolution;
 - a hand check of about 100 flags for label noise, which caps precision.
@@ -91,7 +102,7 @@ The selector's job is **recall** (miss nothing). Precision is the corrector's jo
 
 ---
 
-## 3. Correcting the flagged numbers (planned; step 3.2 built)
+## 3. Correcting the flagged numbers (built: `verify_choice.py` + `correct.py`)
 
 Principle: **default to "keep as written".** A correct number that the corrector changes is a new error, and in
 the flagged set correct numbers outnumber misreads about 3:1. The unchecked agent run shows the danger: of 462
@@ -102,8 +113,9 @@ For each flagged number `x`:
 ### 3.1 Candidates, from appearance only
 - the reader's top other digits at the weakest digit (`alts`)
 - single look-alike digit swaps (3↔8/5, 1↔7, 4↔9, 5↔6/3, 0↔6/8, 2↔7)
-- the other transcriber's value at the aligned position, if it differs
-- the reader's re-read of the line at higher resolution (top few readings)
+- the other transcriber's value at the aligned position, if it differs (`LMA_OTHER=1`). Off by default: the expert
+  transcripts are corrected Gemini transcripts, so using Gemini as a candidate source flatters the evaluation
+- (not built) the reader's re-read of the line at higher resolution (top few readings)
 
 **Never** the rubric / answer key, and never "the value that makes the maths right": that is how silent
 corrections are made. If the true value is not among the candidates it cannot be fixed, so measure
@@ -119,7 +131,9 @@ Reject the change (send it to a TA) if:
 - the candidate equals the rubric's expected value at that step (the Auditor-side check; the rubric is never shown
   to the reader);
 - the blank-image test shows the reader prefers the candidate almost as much **without** the page, i.e. it is
-  guessing from context rather than reading.
+  guessing from context rather than reading (`p_blank >= p_change - 0.15`).
+
+Answer-key numbers are taken from the rubric's `notes` and deduction rules.
 
 ### 3.4 Decision rule (thresholds set on training students)
 
@@ -148,6 +162,15 @@ own later lines (e.g. line 5 uses 3) is recorded as supporting evidence for the 
 The correction only counts as a success if transcript errors **and** grading errors go down compared with no
 correction.
 
+Outputs (`correct.py`): `decisions.csv`, `correct_metrics.json` and corrected transcripts under
+`Outputs/{none,corrected,corrected_ta}/` in the usual Compare layout. `corrected_ta` resolves the TA queue with the
+expert transcript, as an upper bound for a perfect TA. `run_detect.sh` scores all three with `transcript_diff.py`,
+and with `grade_impact.py` when `LMA_GRADE=1`.
+
+**Cost.** About 10 flagged numbers per page × (2 questions per candidate × 3 candidates + 2 blank-image questions)
+is about 80 forward passes per page. Expect several GPU-hours for 293 pages: use `--shard` across GPUs, or
+`LMA_VERIFY_K` with `LMA_SELECT=topk` for a cheaper run.
+
 ### 3.6 Then the agents
 Once 3.1–3.4 pass on their own, they become the agents' tools:
 - the Advocate gets the misread tools; the Auditor gets the silent-correction guards and the rubric;
@@ -160,13 +183,11 @@ The agents must beat the fixed pipeline (3.1–3.4 with no agents) on the same e
 
 ## 4. Order of work
 
-1. Run `scripts/run_detect.sh` on Ada with a visible GPU (`LMA_LIMIT=10` first). For high recall, set
-   `LMA_VERIFY_K=15` until the selector exists. Push `verify_metrics.json`.
-2. Build `selector.py` (section 2); verify on the Ada and Gemini scores.
-3. Point `verify_choice.py` at the selector's flags; add the other-transcriber candidates and the 3.3 guards;
-   set τ_high / τ_low on training students.
-4. Apply the corrections and measure transcript and grading error (3.5).
-5. Wire the tools into the agents (3.6) and compare against the fixed pipeline.
+1. Run `scripts/run_detect.sh` on Ada with a visible GPU (`LMA_LIMIT=10` first, then the full run). It runs
+   selector → verifier → corrector → transcript diff. Push the `*_metrics.json` files, never the CSVs.
+2. Read `correct_metrics.json`: fixes vs broken numbers, TA load. Re-run with `LMA_GRADE=1` to measure grading error.
+3. Add the higher-resolution re-read as a candidate source; hand-check about 100 flags for label noise.
+4. Wire the tools into the agents (3.6) and compare against the fixed pipeline.
 
 ## 5. Not covered by this plan: silent corrections
 

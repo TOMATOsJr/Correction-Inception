@@ -113,7 +113,8 @@ def label_page(gold_text: str, target_text: str) -> tuple[list[dict], int]:
     g, t = math_tokens(gold_text), math_tokens(target_text)
     ops = align([(x["text"], x["type"]) for x in g], [(x["text"], x["type"]) for x in t])
     for tok, (op, gi) in zip(t, ops):
-        tok.update(op=op, gold=g[gi]["text"] if op == "sub" else "", err=int(op != "match"),
+        tok.update(op=op, gold=g[gi]["text"] if op == "sub" else "", gold_raw=g[gi]["raw"] if op == "sub" else "",
+                   err=int(op != "match"),
                    misread=int(op == "sub" and tok["type"] == "num"))
     deleted = len(g) - sum(1 for op, _ in ops if op != "ins")
     return t, deleted

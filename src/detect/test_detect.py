@@ -9,7 +9,70 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from evaluate_detection import at_k, auroc, average_precision  # noqa: E402
 from labels import label_page, math_tokens  # noqa: E402
 from score_tokens import aggregate  # noqa: E402
-from verify_choice import candidates, decide, masked_line, metrics  # noqa: E402
+from verify_choice import candidates, decide, key_numbers, masked_line, metrics, other_values, qid_of  # noqa: E402
+from selector import LogReg, cutoff_for_recall, student_folds  # noqa: E402
+from correct import CHANGE, KEEP, TA, actions, pick_tau, summarise, write_variants  # noqa: E402
+
+
+def test_selector_pieces():
+    rng = np.random.default_rng(0)
+    X = rng.normal(size=(400, 2))
+    y = (X[:, 0] + 0.1 * rng.normal(size=400) > 0.8).astype(int)
+    p = LogReg().fit(X, y).predict(X)
+    assert auroc(y, p) > 0.95  # learns the informative feature
+    s, yy = np.array([0.9, 0.8, 0.7, 0.6, 0.1]), np.array([1, 0, 1, 1, 0])
+    assert cutoff_for_recall(s, yy, 0.66) == 0.7 and cutoff_for_recall(s, yy, 1.0) == 0.6
+    f = student_folds(pd.Series(["b", "a", "c", "a"]), 2)
+    assert f[1] == f[3] and len(set(f)) == 2  # one fold per student
+
+
+def test_verify_helpers():
+    rub = {"notes": "get 72,000 C; p = 1100 W (1.1 kW); cost $0.264", "criteria": [{"deduction_rules": "uses 7200 s"}]}
+    assert {72000.0, 1100.0, 1.1, 0.264, 7200.0} <= key_numbers(rub)
+    assert candidates("59", "58|57", 3, first=("54",)) == ["54", "58", "57"]  # other transcriber's value first
+    assert other_values("$V = 54 + 2$", "$V = 59 + 2$") == {2: "54"}
+    assert qid_of("1_5-2") == "1_5-2" and qid_of("1_5-2_2") == "1_5-2"
+
+
+def _verified():
+    return pd.DataFrame({  # 59 -> 54 strong; 12 correct, weak challenger; 7 correct but key guard; 3 -> 8 flips
+        "page": ["h|s1|q"] * 4, "student": ["s1"] * 4, "i": [2, 4, 6, 8], "start": [5, 10, 15, 20],
+        "end": [7, 12, 16, 21], "text": ["59", "12", "7", "3"], "gold": ["54.0", "", "", "8.0"],
+        "misread": [1, 0, 0, 1], "best": ["54", "17", "1", "8"], "p_change": [0.9, 0.2, 0.95, 0.7],
+        "consistent": [True, True, True, False], "p_blank": [0.5, np.nan, 0.5, np.nan],
+        "cand_is_key": [False, False, True, False], "orig_is_key": [False, False, False, False]})
+
+
+def test_actions_and_guards():
+    df = _verified()
+    assert list(actions(df, 0.8, 0.35, 0.15)) == [CHANGE, KEEP, TA, TA]
+    df.loc[0, "p_blank"] = 0.85  # the reader prefers 54 almost as much without the page: guessing, not reading
+    assert actions(df, 0.8, 0.35, 0.15)[0] == TA
+    assert pick_tau(df[df["misread"] == 1], 0.35, 0.15, 0.01) == 1.01  # nothing to tune on: never auto-change
+
+
+def test_summarise_and_write_variants(tmp=None):
+    import tempfile
+    df = _verified()
+    act = actions(df, 0.8, 0.35, 0.15)
+    s = summarise(df, act, all_misreads=10, pages=1)
+    assert s["auto_fixed"] == 1 and s["auto_broken_correct"] == 0 and s["ta_queue_misreads"] == 1
+    assert s["misreads_after_auto"] == 9 and s["misreads_after_auto_and_perfect_ta"] == 8
+    with tempfile.TemporaryDirectory() as t:
+        root = Path(t) / "src"
+        src = root / "Homework_collected_database_trial_h_s1" / "models" / "m" / "Compare"
+        src.mkdir(parents=True)
+        body = "$V = 59 + 12 + 7 + 3$"
+        (src / "q_markdown.md").write_text("![img](q_source.png)\n" + body, encoding="utf-8")
+        df["start"] = [body.index(x) for x in ("59", "12", "7", "3")]
+        df["end"] = df["start"] + df["text"].str.len()
+        labels = pd.DataFrame({"page": ["h|s1|q"] * 2, "i": [2, 8], "gold_raw": ["54", "8"]})
+        write_variants(Path(t), df, act, labels, root, "m")
+        out = lambda v: (Path(t) / "Outputs" / v / "Homework_collected_database_trial_h_s1" / "models" / "m" /  # noqa: E731
+                         "Compare" / "q_markdown.md").read_text(encoding="utf-8")
+        assert out("none") == "![img](q_source.png)\n" + body
+        assert out("corrected").endswith("$V = 54 + 12 + 7 + 3$")
+        assert out("corrected_ta").endswith("$V = 54 + 12 + 7 + 8$")  # the TA fixes the flipping 3 -> 8
 
 
 def test_tokens_keep_offsets_and_skip_formatting():
