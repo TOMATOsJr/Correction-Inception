@@ -1,0 +1,11 @@
+{
+  "flagged": 15,
+  "flagged_misreads": 2,
+  "candidate_recall": 0.5,
+  "fix_rate": 0.0,
+  "wrong_fix_rate": 0.0,
+  "false_change_rate": 0.0769,
+  "inconsistent_rate": 0.2667,
+  "auroc_p_change": 0.7308,
+  "auroc_neg_gap_same_rows": 0.5769
+}

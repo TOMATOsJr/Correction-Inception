@@ -1,0 +1,13 @@
+[
+ {
+  "experiment": "topk3",
+  "verified": 845,
+  "auto_fixed": 2,
+  "auto_wrong_fix": 3,
+  "auto_broken_correct": 7,
+  "ta_per_page": 2.2,
+  "misreads_before": 680,
+  "misreads_after_auto": 685,
+  "candidate_recall": 0.314
+ }
+]

@@ -1,0 +1,16 @@
+{
+  "name": "crop_corrected_ta",
+  "n_samples": 287,
+  "missing_target": 6,
+  "number_error_sample_rate_percent": 90.24,
+  "number_error_95CI": [
+    83.88,
+    95.77
+  ],
+  "mean_number_mismatches": 12.345,
+  "mean_token_error_rate": 0.4616,
+  "token_error_rate_95CI": [
+    0.3984,
+    0.5456
+  ]
+}

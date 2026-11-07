@@ -1,0 +1,95 @@
+{
+  "pages": 5,
+  "students": 2,
+  "numbers": 131,
+  "misreads": 2,
+  "base_rate": 0.0153,
+  "signals": {
+    "nll": {
+      "auroc": 0.938,
+      "auroc_95CI": [
+        0.938,
+        0.9691
+      ],
+      "avg_precision": 0.1534,
+      "precision@1": 0.2,
+      "recall@1": 0.5,
+      "precision@3": 0.1333,
+      "recall@3": 1.0,
+      "precision@5": 0.08,
+      "recall@5": 1.0
+    },
+    "neg_gap": {
+      "auroc": 0.9419,
+      "auroc_95CI": [
+        0.9419,
+        0.9742
+      ],
+      "avg_precision": 0.1623,
+      "precision@1": 0.2,
+      "recall@1": 0.5,
+      "precision@3": 0.1333,
+      "recall@3": 1.0,
+      "precision@5": 0.08,
+      "recall@5": 1.0
+    },
+    "ent": {
+      "auroc": 0.938,
+      "auroc_95CI": [
+        0.938,
+        0.9691
+      ],
+      "avg_precision": 0.1534,
+      "precision@1": 0.2,
+      "recall@1": 0.5,
+      "precision@3": 0.1333,
+      "recall@3": 1.0,
+      "precision@5": 0.08,
+      "recall@5": 1.0
+    },
+    "dent": {
+      "auroc": 0.9806,
+      "auroc_95CI": [
+        0.9806,
+        0.9948
+      ],
+      "avg_precision": 0.4167,
+      "precision@1": 0.2,
+      "recall@1": 0.5,
+      "precision@3": 0.1333,
+      "recall@3": 1.0,
+      "precision@5": 0.08,
+      "recall@5": 1.0
+    },
+    "n_pieces": {
+      "auroc": 0.7442,
+      "auroc_95CI": [
+        0.7442,
+        0.7552
+      ],
+      "avg_precision": 0.0932,
+      "precision@1": 0.0,
+      "recall@1": 0.0,
+      "precision@3": 0.0667,
+      "recall@3": 0.5,
+      "precision@5": 0.04,
+      "recall@5": 0.5
+    },
+    "random": {
+      "auroc": 0.4767,
+      "auroc_95CI": [
+        0.4278,
+        0.4767
+      ],
+      "avg_precision": 0.0212,
+      "precision@1": 0.0,
+      "recall@1": 0.0,
+      "precision@3": 0.0,
+      "recall@3": 0.0,
+      "precision@5": 0.0,
+      "recall@5": 0.0
+    }
+  },
+  "alt_recovers_gold_percent": 50.0,
+  "alts_top3_recover_gold_percent": 50.0
+}

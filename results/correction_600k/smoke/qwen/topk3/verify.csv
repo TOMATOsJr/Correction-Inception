@@ -1,0 +1,16 @@
+page,student,i,start,end,text,gold,misread,neg_gap,other,cands,p_cands,best,p_change,consistent,p_blank,cand_is_key,orig_is_key,propose
+Homework1|student_31|3_6-1,student_31,69,511,513,49,48.0,1,-0.69111,,48|40|47,48:0.5433|40:0.3780|47:0.3815,48,0.54326,False,0.52836,True,False,False
+Homework1|student_31|3_6-1,student_31,66,495,498,124,24.0,1,-0.78374,,224|424|724,224:0.4381|424:0.4226|724:0.3631,224,0.43806,True,,False,False,False
+Homework1|student_31|3_6-1,student_31,29,285,286,8,,0,-0.86871,,3|1|4,3:0.2234|1:0.2234|4:0.2696,4,0.26965,True,,False,True,False
+Homework8|student_31|10_4-1,student_31,7,36,38,10,,0,-0.71717,,00|20|50,00:0.3924|20:0.2718|50:0.2942,00,0.39244,True,,True,True,False
+Homework8|student_31|10_4-1,student_31,13,61,64,2.4,,0,-0.9536,,1.4|3.4|4.4,1.4:0.1921|3.4:0.1749|4.4:0.1921,4.4,0.19212,True,,False,True,False
+Homework8|student_31|10_4-1,student_31,2,12,14,20,,0,-0.96615,,50|10|30,50:0.2234|10:0.2167|30:0.2480,30,0.24801,True,,False,True,False
+Homework8|student_16|10_6-1,student_16,111,640,643,5.6,,0,-0.0,,8.6|3.6|9.6,8.6:0.5964|3.6:0.5000|9.6:0.5284,8.6,0.59637,False,0.46927,False,False,False
+Homework8|student_16|10_6-1,student_16,20,99,101,25,,0,-0.28734,,20|28|24,20:0.5927|28:0.5155|24:0.5896,20,0.59267,True,0.46879,True,True,True
+Homework8|student_16|10_6-1,student_16,33,166,168,25,,0,-0.32244,,55|15|35,55:0.1078|15:0.1480|35:0.1921,35,0.19212,True,,False,True,False
+Homework1|student_31|2_4-6,student_31,40,388,389,8,,0,-0.92401,,4|2|6,4:0.3660|2:0.2830|6:0.1674,4,0.36602,True,,True,True,False
+Homework1|student_31|2_4-6,student_31,18,250,251,8,,0,-0.97492,,1|4|2,1:0.2696|4:0.2018|2:0.2227,1,0.26965,True,,True,True,False
+Homework1|student_31|2_4-6,student_31,12,221,222,4,,0,-0.98817,,8|1|2,8:0.3641|1:0.2234|2:0.3232,8,0.36408,True,,True,True,False
+Homework6|student_31|8_4-1,student_31,203,1398,1399,5,,0,0.12384,,0|1|4,0:0.4087|1:0.3689|4:0.4554,4,0.45541,False,,True,True,False
+Homework6|student_31|8_4-1,student_31,16,163,164,0,,0,-0.39241,,1|5|8,1:0.5000|5:0.5740|8:0.4845,5,0.57398,False,0.45331,True,True,False
+Homework6|student_31|8_4-1,student_31,217,1435,1437,10,,0,-0.93223,,50|40|00,50:0.3347|40:0.3631|00:0.4232,00,0.42317,True,,True,True,False

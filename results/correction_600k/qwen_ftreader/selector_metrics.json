@@ -1,0 +1,49 @@
+{
+  "numbers": 7690,
+  "misreads": 680,
+  "students": 11,
+  "folds": 5,
+  "target_recall": 0.8,
+  "selector_heldout": {
+    "recall": 0.8132,
+    "precision": 0.1324,
+    "share_flagged": 0.5432,
+    "flags_per_page": 14.76
+  },
+  "nll_cutoff_heldout": {
+    "recall": 0.7956,
+    "precision": 0.1331,
+    "share_flagged": 0.5286,
+    "flags_per_page": 14.36
+  },
+  "features": [
+    "nll",
+    "neg_gap",
+    "ent",
+    "dent",
+    "n_pieces",
+    "nll_prev",
+    "nll_next",
+    "nll_page_mean",
+    "nll_page_rank",
+    "dent_prev",
+    "dent_next",
+    "dent_page_mean",
+    "dent_page_rank",
+    "pos",
+    "page_len",
+    "n_digits",
+    "has_dot",
+    "has_0",
+    "has_1",
+    "has_2",
+    "has_3",
+    "has_4",
+    "has_5",
+    "has_6",
+    "has_7",
+    "has_8",
+    "has_9",
+    "alt_one_digit"
+  ]
+}

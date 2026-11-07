@@ -1,0 +1,13 @@
+[
+ {
+  "experiment": "crop",
+  "verified": 845,
+  "auto_fixed": 2,
+  "auto_wrong_fix": 1,
+  "auto_broken_correct": 5,
+  "ta_per_page": 2.17,
+  "misreads_before": 680,
+  "misreads_after_auto": 683,
+  "candidate_recall": 0.314
+ }
+]

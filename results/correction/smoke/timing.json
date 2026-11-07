@@ -1,0 +1,17 @@
+[
+ {
+  "step": "unit tests",
+  "seconds": 0.9,
+  "exit": 0
+ },
+ {
+  "step": "qwen_ftreader: labels",
+  "seconds": 3.1,
+  "exit": 0
+ },
+ {
+  "step": "qwen_ftreader: token scores (GPU)",
+  "seconds": 24.7,
+  "exit": 1
+ }
+]
