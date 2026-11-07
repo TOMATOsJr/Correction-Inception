@@ -58,7 +58,9 @@ def find(roots: list[Path], pattern: str, up: int = 1) -> Path | None:
 def resolve_data(data: Path) -> dict:
     p = {"edu": find([data], "Rectified_recognized_markdown_done_Anon"),
          "images": find([data], "Screenshot_output_anon/Homework*/student_*/*.png", up=4),
-         "qwen": find([data], "qwen3b_ft", up=0), "lora": find([data], "reader_lora", up=0)}
+         # match on contents, so results/detect/qwen3b_ft (scores, not transcripts) is never picked
+         "qwen": find([data], "qwen3b_ft/Homework_*", up=1),
+         "lora": find([data], "reader_lora/adapter_config.json", up=1)}
     p["gemini"] = p["edu"] / "Observationset_Final" / "v6_Gemini_2p5" if p["edu"] else None
     return p
 
