@@ -155,9 +155,9 @@ def main():
     scores = pd.concat([pd.read_csv(f, dtype={"alts": str, "text": str}) for f in sorted(d.glob("scores*.csv"))],
                        ignore_index=True)
     scored = labels.merge(scores[["page", "i"]], on=["page", "i"])
-    if scored["student"].nunique() < 2 or scored["misread"].sum() == 0:  # e.g. a 10-page smoke run
+    if scored["student"].nunique() < 3 or scored["misread"].sum() == 0:  # e.g. a 10-page smoke run (the cut-off needs inner folds)
         (d / "selector.csv").unlink(missing_ok=True)
-        print("selector: needs >= 2 students and some misreads among the scored pages; skipped (verifier uses top-k)")
+        print("selector: needs >= 3 students and some misreads among the scored pages; skipped (verifier uses top-k)")
         return
     out, metrics = run(labels, scores, a.target_recall, a.folds, a.l2)
     out.to_csv(d / "selector.csv", index=False)

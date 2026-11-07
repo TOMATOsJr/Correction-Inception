@@ -80,6 +80,15 @@ def masked_line(answer: str, start: int, end: int, width: int = 80) -> str:
     return answer[lo:start] + "[?]" + answer[end:hi]
 
 
+def crop_band(image, start: int, n_chars: int, band: float):
+    """Experiment: the horizontal band of the page around where the number should be, so it gets more pixels.
+    No word boxes: the height is guessed from the number's position in the transcript, and the band may miss it."""
+    if band <= 0 or band >= 1 or n_chars <= 0:
+        return image
+    top = min(max(0.0, start / n_chars - band / 2), 1 - band)
+    return image.crop((0, int(top * image.height), image.width, int((top + band) * image.height)))
+
+
 def key_numbers(rubric: dict) -> set[float]:
     """Numbers in the rubric's answer key: the notes and the deduction rules (as values)."""
     text = " ".join([str(rubric.get("notes", ""))] + [str(c.get("deduction_rules", "")) for c in rubric.get("criteria", [])])
@@ -186,6 +195,8 @@ def main():
     p.add_argument("--k", type=int, default=3, help="topk: numbers checked per page (most doubtful by neg_gap)")
     p.add_argument("--max-cands", type=int, default=3)
     p.add_argument("--no-blank", action="store_true", help="skip the blank-image guard (saves 2 passes per change)")
+    p.add_argument("--crop-band", type=float, default=0, help="experiment: show only this share of the page height "
+                   "around the number's estimated position (0 = whole page)")
     p.add_argument("--device", type=int, default=0)
     p.add_argument("--shard", default=None, help="i/n: every n-th page starting at i")
     p.add_argument("--limit", type=int)
@@ -223,18 +234,19 @@ def main():
         if a.other_root:
             of = page_files(Path(a.other_root), hw, st, qid, a.other_model_dir).get(stem)
             other = other_values(page_text(of), answer) if of else {}
-        blank, rows = None, []
+        rows = []
         for _, r in by_page[pid].iterrows():
             s, e = int(r["start"]), int(r["end"])
             x = answer[s:e]
             ov = other.get(int(r["i"]), "")
             cands = candidates(x, r["alts"], a.max_cands, first=(ov,))
             line = masked_line(answer, s, e)
-            scored = [(c, *asker.challenge(image, line, x, c)) for c in cands]
+            view = crop_band(image, s, len(answer), a.crop_band)
+            scored = [(c, *asker.challenge(view, line, x, c)) for c in cands]
             dec = decide(scored)
             p_blank = float("nan")
             if dec["best"] and dec["p_change"] > 0.5 and not a.no_blank:
-                blank = blank or Image.new("RGB", image.size, "white")
+                blank = Image.new("RGB", view.size, "white")
                 p_blank = round(asker.challenge(blank, line, x, dec["best"])[0], 5)
             bv, xv = _num(dec["best"]), _num(x)
             rows.append({"page": pid, "student": r["student"], "i": r["i"], "start": s, "end": e, "text": x,

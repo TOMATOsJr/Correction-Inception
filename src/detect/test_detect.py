@@ -9,7 +9,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from evaluate_detection import at_k, auroc, average_precision  # noqa: E402
 from labels import label_page, math_tokens  # noqa: E402
 from score_tokens import aggregate  # noqa: E402
-from verify_choice import candidates, decide, key_numbers, masked_line, metrics, other_values, qid_of  # noqa: E402
+from sweep_correct import digit_doubt, with_guards  # noqa: E402
+from verify_choice import crop_band, candidates, decide, key_numbers, masked_line, metrics, other_values, qid_of  # noqa: E402
 from selector import LogReg, cutoff_for_recall, student_folds  # noqa: E402
 from correct import CHANGE, KEEP, TA, actions, pick_tau, summarise, write_variants  # noqa: E402
 
@@ -152,6 +153,22 @@ def test_verify_metrics():
     m = metrics(df)
     assert m["candidate_recall"] == 0.5 and m["fix_rate"] == 0.5 and m["wrong_fix_rate"] == 0.5
     assert m["false_change_rate"] == 0.5 and m["auroc_p_change"] == 1.0
+
+
+def test_crop_band_stays_inside_page():
+    from PIL import Image
+    img = Image.new("RGB", (100, 1000))
+    assert crop_band(img, 0, 100, 0) is img
+    assert crop_band(img, 0, 100, 0.3).size == (100, 300)  # first number: top of the page
+    assert crop_band(img, 100, 100, 0.3).size == (100, 300)  # last number: bottom of the page
+
+
+def test_sweep_guards_and_digit_filter():
+    df = pd.DataFrame({"cand_is_key": [True], "alt": ["12"], "p_change": [0.9], "p_blank": [0.9]})
+    assert with_guards(df, "no_key", 0.15)[0]["cand_is_key"].tolist() == [False]
+    assert with_guards(df, "no_blank", 0.15)[1] < 0
+    assert with_guards(df, "all", 0.15)[1] == 0.15
+    assert digit_doubt(pd.DataFrame({"alt": ["12", " ", None]})).tolist() == [True, False, False]
 
 
 def test_metrics():
