@@ -46,11 +46,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(ROOT / "src" / "eval"))
 from evaluate_detection import _num, auroc  # noqa: E402
 from labels import label_page, page_files, page_text  # noqa: E402
+from choice_prompt import CONFUSE, QUESTION, ab_token_ids, encode, masked_line  # noqa: E402,F401
 
-CONFUSE = {"0": "68", "1": "72", "2": "7", "3": "85", "4": "9", "5": "63", "6": "05", "7": "12", "8": "30", "9": "4"}
-QUESTION = ("Look only at the student's handwriting in the image. In this line of their work:\n\n{line}\n\n"
-            "the number marked [?] is written either as\nA) {a}\nB) {b}\n"
-            "Which one did the student actually write, even if it is mathematically wrong? Answer with A or B.")
 FIELDS = ["page", "student", "i", "start", "end", "text", "gold", "misread", "neg_gap", "other", "cands", "p_cands",
           "best", "p_change", "consistent", "p_blank", "cand_is_key", "orig_is_key", "propose"]
 _KEYNUM = re.compile(r"(?<![\w.])(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?|(?<![\w\d])\.\d+")
@@ -69,15 +66,6 @@ def candidates(text: str, alts, max_cands: int, first: tuple = ()) -> list[str]:
             seen.add(v)
             out.append(c)
     return out[:max_cands]
-
-
-def masked_line(answer: str, start: int, end: int, width: int = 80) -> str:
-    """The number's line (clipped to ~width chars each side) with the number replaced by [?]."""
-    lo = answer.rfind("\n", 0, start) + 1
-    hi = answer.find("\n", end)
-    hi = len(answer) if hi < 0 else hi
-    lo, hi = max(lo, start - width), min(hi, end + width)
-    return answer[lo:start] + "[?]" + answer[end:hi]
 
 
 def crop_band(image, start: int, n_chars: int, band: float):
@@ -110,14 +98,11 @@ class ChoiceAsker:
 
     def __init__(self, scorer):
         self.s = scorer
-        self.ab = [scorer.tok.convert_tokens_to_ids(x) for x in ("A", "B")]
+        self.ab = ab_token_ids(scorer.tok)
 
     def p_first(self, image, line: str, a: str, b: str) -> float:
-        torch, proc = self.s.torch, self.s.proc
-        q = QUESTION.format(line=line, a=a, b=b)
-        msgs = [{"role": "user", "content": [{"type": "image", "image": image}, {"type": "text", "text": q}]}]
-        text = proc.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True)
-        inputs = proc(text=[text], images=[image], return_tensors="pt").to(self.s.model.device)
+        torch = self.s.torch
+        inputs = encode(self.s.proc, image, line, a, b).to(self.s.model.device)
         with torch.no_grad():
             logits = self.s.model(**inputs, logits_to_keep=1).logits[0, -1].float()
         return float(torch.softmax(logits[self.ab], -1)[0])
@@ -200,6 +185,8 @@ def main():
     p.add_argument("--device", type=int, default=0)
     p.add_argument("--shard", default=None, help="i/n: every n-th page starting at i")
     p.add_argument("--limit", type=int)
+    p.add_argument("--exclude-students", default="", help="comma-separated students to skip (e.g. the ones a "
+                   "fine-tuned checker was trained on, so every reported number is on unseen students)")
     a = p.parse_args()
     a.images = a.images or a.edu_data
     from PIL import Image
@@ -207,7 +194,12 @@ def main():
     from score_tokens import TokenScorer, jobs
 
     d = Path(a.dir)
-    by_page = {pg: g for pg, g in flagged_numbers(d, a.select, a.k).groupby("page")}
+    flagged = flagged_numbers(d, a.select, a.k)
+    skip = {x for x in a.exclude_students.split(",") if x}
+    if skip:
+        flagged = flagged[~flagged["student"].astype(str).isin(skip)]
+        print(f"excluding students {sorted(skip)}: {len(flagged)} numbers left")
+    by_page = {pg: g for pg, g in flagged.groupby("page")}
     suffix = f".{a.shard.replace('/', 'of')}" if a.shard else ""
     out_path = d / f"verify{suffix}.csv"
     if out_path.exists() and list(pd.read_csv(out_path, nrows=0).columns) != FIELDS:

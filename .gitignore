@@ -34,6 +34,21 @@ results/detect/**/scores*.csv
 results/detect/**/verify*.csv
 results/detect/**/selector.csv
 results/detect/**/decisions.csv
+# A/B checker (scripts/run_checker.sh): pairs quote student lines; adapters are large; symlinked inputs
+results/checker*/pairs/*.jsonl
+results/checker*/checker_*/
+results/checker*/detect/
+results/checker*/correct_*/*.csv
+results/checker*/**/*.log
+results/checker*/**/per_sample.csv
+# correction runs write the same per-number files as detection
+results/correction*/**/labels.csv
+results/correction*/**/scores*.csv
+results/correction*/**/verify*.csv
+results/correction*/**/selector.csv
+results/correction*/**/decisions.csv
+results/correction*/**/sweep_metrics.csv
+results/correction*/**/per_sample.csv
 step9_normalized.csv
 # large artefacts (GitHub limit 100 MB/file): trained adapter, duplicates
 **/reader_lora/
