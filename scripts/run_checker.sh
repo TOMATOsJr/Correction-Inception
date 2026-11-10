@@ -46,7 +46,8 @@ QWEN_ROOT="${LMA_QWEN_ROOT:-$FOUND_QWEN}"
 ADAPTER="${LMA_ADAPTER:-$FOUND_LORA}"
 PROMPT=src/eval/prompts/Initial_prompt_wo_problem_statement_v6.txt
 SMOKE="${LMA_SMOKE:-0}"
-OUT="${LMA_OUT:-results/checker$([ "$SMOKE" = 1 ] && echo _smoke)}"
+# (not $([ .. ] && echo ..): when the test is false that assignment fails and set -e exits without a word)
+if [ "$SMOKE" = 1 ]; then OUT="${LMA_OUT:-results/checker_smoke}"; else OUT="${LMA_OUT:-results/checker}"; fi
 # labels.csv + scores.csv of the Qwen transcripts: the 600k-pixel scores of the last correction run (job.sh) when
 # present, so the same numbers are checked as before; made here if missing. The smoke run keeps its own copy.
 if [ -n "${LMA_DETECT_DIR:-}" ]; then DETECT_DIR="$LMA_DETECT_DIR"
