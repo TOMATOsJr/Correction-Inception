@@ -1,7 +1,7 @@
 """Fine-tune the A/B checker: Qwen2.5-VL-3B (QLoRA) answers "is the number marked [?] written as A) x or B) y?"
 with the option that is WRITTEN on the page, including mathematically wrong values (pairs: ab_data.py).
 
-Loss is on one token only, the answer letter right after the generation prompt, which is exactly the token
+Loss is on one token only: the answer letter, predicted from the last prompt position, which is exactly what
 verify_choice.py reads (P('A') vs P('B')). The question is built by choice_prompt.encode, shared with the verifier.
 
 Start point: the base model, or (--init-adapter) our verbatim reader's LoRA, trained further on the A/B task.
@@ -160,18 +160,20 @@ def main():
 
     def collate(batch):
         q = batch[0]  # batch size 1: pages differ in size
-        enc = encode(proc, images(q), q["line"], q["a"], q["b"])
-        ans = torch.tensor([[ab[0] if q["answer"] == "A" else ab[1]]])
-        shape = enc["input_ids"].shape
-        for k, v in list(enc.items()):  # grow every per-position tensor by the answer token (as score_tokens.py)
-            if k != "input_ids" and torch.is_tensor(v) and v.shape == shape:
-                fill = torch.ones_like(ans) if k == "attention_mask" else torch.zeros_like(ans)
-                enc[k] = torch.cat([v, fill.to(v.dtype)], 1)
-        enc["input_ids"] = torch.cat([enc["input_ids"], ans], 1)
-        labels = torch.full_like(enc["input_ids"], -100)
-        labels[0, -1] = ans[0, 0]  # loss on the answer letter only
-        enc["labels"] = labels
-        return dict(enc)
+        enc = dict(encode(proc, images(q), q["line"], q["a"], q["b"]))  # ends at the generation prompt
+        enc["target"] = torch.tensor([ab[0] if q["answer"] == "A" else ab[1]])
+        return enc
+
+    class OneTokenTrainer(Trainer):
+        """Loss on the answer letter only, from the logits at the last prompt position: exactly what
+        verify_choice.py reads. logits_to_keep=1 avoids a full-vocabulary float copy of every position
+        (~0.5 GB per page), which ran a 2080 Ti out of memory."""
+
+        def compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
+            target = inputs.pop("target")
+            out = model(**inputs, logits_to_keep=1)
+            loss = torch.nn.functional.cross_entropy(out.logits[:, -1].float(), target.to(out.logits.device))
+            return (loss, out) if return_outputs else loss
 
     args = TrainingArguments(
         output_dir=str(out), per_device_train_batch_size=1, gradient_accumulation_steps=a.grad_accum,
@@ -181,8 +183,9 @@ def main():
         gradient_checkpointing=True, gradient_checkpointing_kwargs={"use_reentrant": False},
         remove_unused_columns=False, dataloader_num_workers=0, report_to="none", seed=0)
     resume = any(out.glob("checkpoint-*"))
-    Trainer(model=model, args=args, train_dataset=Pairs(), data_collator=collate).train(
-        resume_from_checkpoint=resume or None)
+    trainer = OneTokenTrainer(model=model, args=args, train_dataset=Pairs(), data_collator=collate)
+    trainer.model_accepts_loss_kwargs = False  # the Trainer then averages the loss over gradient accumulation itself
+    trainer.train(resume_from_checkpoint=resume or None)
     model.save_pretrained(str(out))
     proc.save_pretrained(str(out))
     print(f"saved checker adapter to {out}")

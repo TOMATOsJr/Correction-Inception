@@ -83,11 +83,12 @@ need_gpu() {
     exit 1
   fi
 }
-# run two commands on two GPUs at once if there are two, else one after the other
-pair_run() {  # "cmd0" "cmd1" (each gets --device appended)
+# run two commands on two GPUs at once if there are two, else one after the other. Each process is pinned with
+# CUDA_VISIBLE_DEVICES and sees its GPU as device 0 (the Trainer ignored --device 1 and put both on GPU 0).
+pair_run() {  # "cmd0" "cmd1" (each gets --device 0 appended)
   if [ "$NGPU" -ge 2 ]; then
-    eval "$1 --device 0" & local p0=$!
-    eval "$2 --device 1" & local p1=$!
+    eval "CUDA_VISIBLE_DEVICES=0 $1 --device 0" & local p0=$!
+    eval "CUDA_VISIBLE_DEVICES=1 $2 --device 0" & local p1=$!
     local rc=0
     wait $p0 || rc=1
     wait $p1 || rc=1   # let both finish before stopping on a failure
