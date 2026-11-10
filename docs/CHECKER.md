@@ -44,28 +44,29 @@ Loss is on a single token, the answer letter, which is exactly the token the ver
 `src/detect/choice_prompt.encode`, shared by training, evaluation and the verifier.
 
 ## Running on ADA
-Same setup as `run_detect.sh` (venv at `../venv`, data at `~/Correction-Inception/lma_data`, Qwen transcripts at
-`local_results/results/Outputs/qwen3b_ft`, reader LoRA at `local_results/results/reader_lora`).
-`HF_TOKEN` must be in `.env`, from an account that accepted FERMAT's terms. `HF_HOME` defaults to `/scratch/$USER/hf_cache`;
-point it at the existing cache if the models are already downloaded elsewhere (e.g. `HF_HOME=/scratch/jayanth.raju/hf_cache`).
+`job.sh` (repo root) is the SLURM job. It uses the same layout as the last correction run: data, transcripts and the
+reader LoRA are found inside the repo (`LMA_DATA=.`), the venv is `/home2/prabhavsai.kollipara/venv`, and the models
+come from the usual Hugging Face cache. The doubtful numbers come from the 600k-pixel scores of that run
+(`results/correction_600k/qwen_ftreader/`), so the checker is tested on the same numbers as before.
+`HF_TOKEN` must be in `.env`, from an account that accepted FERMAT's terms (FERMAT downloads once, ~5 GB).
 
 ```bash
-cd ~/Correction-Inception
+cd /home2/prabhavsai.kollipara/Correction-Inception
 git fetch origin && git checkout ab_checker && git pull
 
-# 1. smoke test: every stage on a few examples (~20-30 min plus downloads). Read the end of the log.
-LMA_SMOKE=1 sbatch scripts/checker_ada.slurm
-tail -f checker_<jobid>.out
+# 1. smoke test: every stage on a few examples (~20-30 min plus downloads). Read the end of output.txt.
+LMA_SMOKE=1 sbatch job.sh
+tail -f output.txt
 cat results/checker_smoke/CHECKER_RESULTS.md     # tables filled with (meaningless) numbers = plumbing works
 rm -rf results/checker_smoke
 
 # 2. the real run
-sbatch scripts/checker_ada.slurm
+sbatch job.sh
 cat results/checker/CHECKER_RESULTS.md
 ```
 
 **Resuming:** every stage skips finished work, so after a crash or the time limit, submit the same command again.
-To run only some stages: `STAGES="eval correct" sbatch scripts/checker_ada.slurm`.
+To run only some stages: `STAGES="eval correct" sbatch job.sh`.
 
 | Stage | What | GPU | Rough time (2× 2080 Ti) |
 |---|---|---|---|
@@ -86,7 +87,7 @@ The smoke run's timings give a better estimate: training s/it × 750 steps, and 
    and the checkers.
 3. **Table 2: automatic correction.** Success = *Fixed* > *Broken* + *Changed to another wrong value*, and fewer wrong
    numbers per exam after than before. The thresholds are still tuned per student fold for ≤ 1% false changes (`correct.py`).
-4. If table 2 is positive, re-run with grading: `LMA_GRADE=1 STAGES=correct sbatch scripts/checker_ada.slurm` (the
+4. If table 2 is positive, re-run with grading: `LMA_GRADE=1 STAGES=correct sbatch job.sh` (the
    already-verified numbers are reused; only grading runs).
 
 **What to commit:** `git add results/checker` picks up only the safe files: `CHECKER_RESULTS.md`, `eval/**`
@@ -97,8 +98,8 @@ Pairs, adapters, `verify*.csv`, `decisions.csv` and transcripts quote student wo
 ## Fairness of the comparison
 - The doubtful numbers come from the same `scores.csv` for both checkers, so both see the same 3 numbers per page.
 - The reader baseline is re-run on the same unseen students, so the old 845-number result is not mixed in.
-- If `results/detect/qwen3b_ft_ftreader/scores.csv` already exists on ADA (from `run_detect.sh`), it is reused. It may
-  have been scored at a higher resolution than 602,112 pixels; that changes which numbers are picked, not the fairness.
+- The scores are the ones from the last correction run (`results/correction_600k/qwen_ftreader/`, 600k pixels); if that
+  folder is missing, `results/detect/qwen3b_ft_ftreader/` is used, or the scores are computed (`LMA_DETECT_DIR` overrides).
 
 ## Next, once the checker works
 - The Auditor's own tools: the blank-image test (already computed per change as `p_blank`), the step recompute, and the

@@ -2,7 +2,7 @@
 # Fine-tuned A/B checker on ADA: build pairs -> train -> measure -> use it in the correction pipeline.
 # Why and what: docs/CHECKER.md
 #
-#   bash scripts/run_checker.sh                 # everything (or: sbatch scripts/checker_ada.slurm)
+#   bash scripts/run_checker.sh                 # everything (on ADA: sbatch job.sh)
 #   STAGES="eval" bash scripts/run_checker.sh   # only some stages
 #
 # Stages (each skips finished work, so re-running after a crash or time-out continues):
@@ -21,29 +21,47 @@
 #   LMA_CHECKER=auto             checker used in 'correct': auto (best edu/misread accuracy) | checker_f | checker_fe
 #   LMA_CORRECT_BASELINE=1       0 = skip the reader-as-checker baseline in 'correct' (saves half the time)
 #   LMA_GRADE=0                  1 = also grade none / corrected with the 7B grader (slow)
-#   LMA_DATA / LMA_EDU / LMA_IMAGES / LMA_QWEN_ROOT / LMA_ADAPTER / LMA_DETECT_DIR / LMA_OUT / HF_HOME   paths
+#   LMA_DATA (default: repo root; everything else is found inside it) / LMA_EDU / LMA_IMAGES / LMA_QWEN_ROOT /
+#   LMA_ADAPTER / LMA_DETECT_DIR / LMA_OUT   path overrides
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
-source "${LMA_VENV:-$ROOT/../venv}/bin/activate"
+[ -n "${VIRTUAL_ENV:-}" ] || source "${LMA_VENV:-$ROOT/../venv}/bin/activate"
 
-DATA="${LMA_DATA:-$HOME/Correction-Inception/lma_data}"
-EDU="${LMA_EDU:-$DATA/edu_text/edu_data}"
-IMAGES="${LMA_IMAGES:-$EDU}"
+# Paths are found by contents under LMA_DATA (default: the repo root, as job.sh / run_correction.py --data .)
+DATA="${LMA_DATA:-$ROOT}"
+eval "$(python - "$DATA" <<'PY'
+import sys; sys.path.insert(0, "scripts")
+from pathlib import Path
+from run_correction import resolve_data
+p = resolve_data(Path(sys.argv[1]))
+for k, v in [("FOUND_EDU", p["edu"]), ("FOUND_IMAGES", p["images"]), ("FOUND_QWEN", p["qwen"]), ("FOUND_LORA", p["lora"])]:
+    print(f"{k}='{v or ''}'")
+PY
+)"
+EDU="${LMA_EDU:-$FOUND_EDU}"
+IMAGES="${LMA_IMAGES:-$FOUND_IMAGES}"
+QWEN_ROOT="${LMA_QWEN_ROOT:-$FOUND_QWEN}"
+ADAPTER="${LMA_ADAPTER:-$FOUND_LORA}"
 PROMPT=src/eval/prompts/Initial_prompt_wo_problem_statement_v6.txt
-QWEN_ROOT="${LMA_QWEN_ROOT:-local_results/results/Outputs/qwen3b_ft}"
-ADAPTER="${LMA_ADAPTER:-local_results/results/reader_lora}"
 SMOKE="${LMA_SMOKE:-0}"
 OUT="${LMA_OUT:-results/checker$([ "$SMOKE" = 1 ] && echo _smoke)}"
-# labels.csv + scores.csv of the Qwen transcripts (made by run_detect.sh; made here if missing). The smoke run keeps
-# its own copy, so its 4-page scores never stand in for the real ones.
-DETECT_DIR="${LMA_DETECT_DIR:-$([ "$SMOKE" = 1 ] && echo "$OUT/detect" || echo results/detect/qwen3b_ft_ftreader)}"
+# labels.csv + scores.csv of the Qwen transcripts: the 600k-pixel scores of the last correction run (job.sh) when
+# present, so the same numbers are checked as before; made here if missing. The smoke run keeps its own copy.
+if [ -n "${LMA_DETECT_DIR:-}" ]; then DETECT_DIR="$LMA_DETECT_DIR"
+elif [ "$SMOKE" = 1 ]; then DETECT_DIR="$OUT/detect"
+elif [ -f results/correction_600k/qwen_ftreader/scores.csv ]; then DETECT_DIR=results/correction_600k/qwen_ftreader
+else DETECT_DIR=results/detect/qwen3b_ft_ftreader; fi
+for v in EDU IMAGES QWEN_ROOT ADAPTER; do
+  [ -n "${!v}" ] && [ -e "${!v}" ] || { echo "missing $v (looked under $DATA); set LMA_$v" >&2; exit 1; }
+done
 STAGES="${STAGES:-test pairs train eval correct}"
 TRAIN_STUDENTS="${LMA_TRAIN_STUDENTS:-3}"
 MAX_EXAMPLES="${LMA_MAX_EXAMPLES:-6000}"
 PIX=602112   # 768*28*28, the resolution of the earlier local correction run; the checker is trained at the same
-export HF_HOME="${HF_HOME:-/scratch/$USER/hf_cache}"
+# HF_HOME: left as is (the default ~/.cache/huggingface already holds the models from earlier jobs)
+export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}"
 export PYTHONUNBUFFERED=1
 if [ "$SMOKE" = 1 ]; then
   MAX_EXAMPLES=40; PER_KIND=10; LIMIT="--limit 4"; EPOCHS=1
@@ -54,7 +72,8 @@ fi
 mkdir -p "$OUT"
 LOG="$OUT/run_$(date +%m%d_%H%M).log"
 exec > >(tee -a "$LOG") 2>&1
-echo "=== stages: $STAGES | out: $OUT | HF_HOME: $HF_HOME"
+echo "=== stages: $STAGES | out: $OUT | HF_HOME: ${HF_HOME:-default}"
+echo "=== edu: $EDU | images: $IMAGES | transcripts: $QWEN_ROOT | reader LoRA: $ADAPTER | scores: $DETECT_DIR"
 
 NGPU=$(python -c "import torch; print(torch.cuda.device_count() if torch.cuda.is_available() else 0)")
 has() { [[ " $STAGES " == *" $1 "* ]]; }

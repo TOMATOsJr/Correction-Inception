@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH -A research
-#SBATCH -J "correction"
+#SBATCH -J "checker"
 #SBATCH -c 12
 #SBATCH --mem-per-cpu=2048
 #SBATCH -G 2
@@ -11,6 +11,13 @@
 #SBATCH --mail-user=prabhavsai.kollipara@research.iiit.ac.in
 #SBATCH -w gnode057
 
+# A/B checker: build pairs -> fine-tune -> measure -> correction with the checker (docs/CHECKER.md).
+#   LMA_SMOKE=1 sbatch job.sh               smoke test first (~20-30 min): results/checker_smoke
+#   sbatch job.sh                           the real run: results/checker/CHECKER_RESULTS.md
+#   STAGES="eval correct" sbatch job.sh     only some stages (every stage resumes, so re-submitting continues)
+#   LMA_GRADE=1 STAGES=correct sbatch job.sh   + grading, once the correction table shows a net gain
+# run_checker.sh uses both GPUs itself (two trainings / evaluations / verify shards at once): no CUDA_VISIBLE_DEVICES.
+
 cd "/home2/prabhavsai.kollipara/Correction-Inception/"
 
 source /home2/prabhavsai.kollipara/venv/bin/activate
@@ -19,11 +26,8 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 echo "Time at entrypoint: $(date)"
 echo "Working directory: ${PWD}"
+nvidia-smi --query-gpu=index,name,memory.total --format=csv || true
 
-CUDA_VISIBLE_DEVICES=0 python3 scripts/run_correction.py --data . --experiments topk3 \
-    --max-pixels 600000 --out results/correction_600k > gpu0.log 2>&1 &
-CUDA_VISIBLE_DEVICES=1 python3 scripts/run_correction.py --data . --experiments crop \
-    --max-pixels 600000 --out results/correction_600k_crop > gpu1.log 2>&1 &
-wait
+LMA_DATA=. bash scripts/run_checker.sh
 
 echo "Time at exit: $(date)"
