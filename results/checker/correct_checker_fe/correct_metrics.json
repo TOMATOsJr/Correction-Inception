@@ -1,0 +1,26 @@
+{
+  "settings": {
+    "max_false_change": 0.01,
+    "tau_low": 0.35,
+    "blank_margin": 0.15,
+    "tau_high_per_fold": [
+      0.98
+    ]
+  },
+  "heldout": {
+    "verified": 569,
+    "verified_misreads": 106,
+    "auto_fixed": 5,
+    "auto_wrong_fix": 0,
+    "auto_broken_correct": 3,
+    "ta_queue": 125,
+    "ta_queue_misreads": 41,
+    "ta_per_page": 0.65,
+    "kept_misreads": 60,
+    "false_change_rate": 0.0065,
+    "misreads_before": 304,
+    "misreads_after_auto": 302,
+    "misreads_after_auto_and_perfect_ta": 261
+  },
+  "pages_without_source": 0
+}

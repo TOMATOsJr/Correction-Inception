@@ -1,0 +1,31 @@
+{
+  "tag": "reader",
+  "adapter": "local_results/results/reader_lora",
+  "seconds": 4190,
+  "by_kind": {
+    "edu/lookalike": {
+      "pairs": 400,
+      "accuracy": 0.95,
+      "both_orders": 0.8175,
+      "mean_p": 0.6612
+    },
+    "edu/misread": {
+      "pairs": 196,
+      "accuracy": 0.5153,
+      "both_orders": 0.301,
+      "mean_p": 0.5153
+    },
+    "fermat/lookalike": {
+      "pairs": 400,
+      "accuracy": 0.93,
+      "both_orders": 0.795,
+      "mean_p": 0.6887
+    },
+    "fermat/silent": {
+      "pairs": 78,
+      "accuracy": 0.8205,
+      "both_orders": 0.6667,
+      "mean_p": 0.6594
+    }
+  }
+}

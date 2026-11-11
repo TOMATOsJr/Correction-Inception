@@ -1,0 +1,106 @@
+{
+  "base": {
+    "edu/lookalike": {
+      "pairs": 400,
+      "accuracy": 0.9025,
+      "both_orders": 0.765,
+      "mean_p": 0.6413
+    },
+    "edu/misread": {
+      "pairs": 196,
+      "accuracy": 0.5306,
+      "both_orders": 0.3214,
+      "mean_p": 0.5061
+    },
+    "fermat/lookalike": {
+      "pairs": 400,
+      "accuracy": 0.935,
+      "both_orders": 0.83,
+      "mean_p": 0.6812
+    },
+    "fermat/silent": {
+      "pairs": 78,
+      "accuracy": 0.8077,
+      "both_orders": 0.6282,
+      "mean_p": 0.6356
+    }
+  },
+  "reader": {
+    "edu/lookalike": {
+      "pairs": 400,
+      "accuracy": 0.95,
+      "both_orders": 0.8175,
+      "mean_p": 0.6612
+    },
+    "edu/misread": {
+      "pairs": 196,
+      "accuracy": 0.5153,
+      "both_orders": 0.301,
+      "mean_p": 0.5153
+    },
+    "fermat/lookalike": {
+      "pairs": 400,
+      "accuracy": 0.93,
+      "both_orders": 0.795,
+      "mean_p": 0.6887
+    },
+    "fermat/silent": {
+      "pairs": 78,
+      "accuracy": 0.8205,
+      "both_orders": 0.6667,
+      "mean_p": 0.6594
+    }
+  },
+  "checker_fe": {
+    "edu/lookalike": {
+      "pairs": 400,
+      "accuracy": 0.995,
+      "both_orders": 0.9875,
+      "mean_p": 0.9845
+    },
+    "edu/misread": {
+      "pairs": 196,
+      "accuracy": 0.5714,
+      "both_orders": 0.4898,
+      "mean_p": 0.5387
+    },
+    "fermat/lookalike": {
+      "pairs": 400,
+      "accuracy": 0.9825,
+      "both_orders": 0.9825,
+      "mean_p": 0.9838
+    },
+    "fermat/silent": {
+      "pairs": 78,
+      "accuracy": 0.9231,
+      "both_orders": 0.9103,
+      "mean_p": 0.9247
+    }
+  },
+  "checker_f": {
+    "edu/lookalike": {
+      "pairs": 400,
+      "accuracy": 0.995,
+      "both_orders": 0.995,
+      "mean_p": 0.9947
+    },
+    "edu/misread": {
+      "pairs": 196,
+      "accuracy": 0.4694,
+      "both_orders": 0.3622,
+      "mean_p": 0.4459
+    },
+    "fermat/lookalike": {
+      "pairs": 400,
+      "accuracy": 0.9925,
+      "both_orders": 0.985,
+      "mean_p": 0.9884
+    },
+    "fermat/silent": {
+      "pairs": 78,
+      "accuracy": 0.9487,
+      "both_orders": 0.9359,
+      "mean_p": 0.9492
+    }
+  }
+}

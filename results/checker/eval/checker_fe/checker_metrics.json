@@ -1,0 +1,31 @@
+{
+  "tag": "checker_fe",
+  "adapter": "results/checker/checker_fe",
+  "seconds": 4194,
+  "by_kind": {
+    "edu/lookalike": {
+      "pairs": 400,
+      "accuracy": 0.995,
+      "both_orders": 0.9875,
+      "mean_p": 0.9845
+    },
+    "edu/misread": {
+      "pairs": 196,
+      "accuracy": 0.5714,
+      "both_orders": 0.4898,
+      "mean_p": 0.5387
+    },
+    "fermat/lookalike": {
+      "pairs": 400,
+      "accuracy": 0.9825,
+      "both_orders": 0.9825,
+      "mean_p": 0.9838
+    },
+    "fermat/silent": {
+      "pairs": 78,
+      "accuracy": 0.9231,
+      "both_orders": 0.9103,
+      "mean_p": 0.9247
+    }
+  }
+}

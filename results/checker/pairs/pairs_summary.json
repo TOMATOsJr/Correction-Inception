@@ -1,0 +1,32 @@
+{
+  "fermat": {
+    "train": {
+      "lookalike": 6036,
+      "silent": 804
+    },
+    "dev": {
+      "lookalike": 966,
+      "silent": 112
+    },
+    "test": {
+      "lookalike": 1632,
+      "silent": 156
+    }
+  },
+  "edu": {
+    "train_students": [
+      "student_2",
+      "student_35",
+      "student_42"
+    ],
+    "pages_missing": 0,
+    "train": {
+      "misread": 414,
+      "lookalike": 558
+    },
+    "test": {
+      "misread": 392,
+      "lookalike": 878
+    }
+  }
+}
