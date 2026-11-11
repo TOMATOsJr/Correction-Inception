@@ -15,7 +15,7 @@ Output (in --dir): beams[.<shard>].csv  page, i, written, beams ('|'-joined dist
 written value), beam_p (their sequence probabilities). verify_choice.py --beams uses them as the first candidates.
 
   python beam_candidates.py --dir results/checker/correct_x --target-root R --model-dir qwen3b_ft \\
-      --adapter local_results/results/reader_lora --select topk --k 10 --beams 8 --keep 4
+      --adapter local_results/results/reader_lora --select topk --k 10 --beams 6 --keep 4
 """
 from __future__ import annotations
 
@@ -73,15 +73,27 @@ class BeamReader:
         self.s, self.prompt, self.k = scorer, prompt, beams
         self.max_new, self.max_prefix = max_new_tokens, max_prefix_tokens
 
-    def continuations(self, image, prefix: str) -> list[tuple[str, float]] | None:
+    def window(self, prefix: str) -> list[int]:
+        """Token ids of the last ~max_prefix tokens of the transcript before the number, starting at a line start
+        when one is near. The whole page stays in view as the image; a long prefix x the beams does not fit an
+        11 GB GPU (8 beams x 3,700 tokens: ~1.5 GB attention per layer)."""
+        enc = self.s.tok(prefix, add_special_tokens=False, return_offsets_mapping=True)
+        ids, offs = enc["input_ids"], enc["offset_mapping"]
+        if len(ids) <= self.max_prefix:
+            return ids
+        cut = offs[len(ids) - self.max_prefix][0]
+        nl = prefix.find("\n", cut)
+        if 0 <= nl < cut + 300:
+            cut = nl + 1
+        return self.s.tok(prefix[cut:], add_special_tokens=False)["input_ids"]
+
+    def continuations(self, image, prefix: str) -> list[tuple[str, float]]:
         """The k best continuations after `prefix` (the transcript up to the number), with probabilities."""
         torch, proc, tok = self.s.torch, self.s.proc, self.s.tok
         msgs = [{"role": "user", "content": [{"type": "image", "image": image}, {"type": "text", "text": self.prompt}]}]
         text = proc.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True)
         inputs = proc(text=[text], images=[image], return_tensors="pt")
-        ids = tok(prefix, add_special_tokens=False)["input_ids"]
-        if len(ids) > self.max_prefix:
-            return None  # deep in a looping transcript: skip
+        ids = self.window(prefix)
         if ids:
             ans = torch.tensor([ids])
             shape = inputs["input_ids"].shape
@@ -120,10 +132,10 @@ def main():
     p.add_argument("--max-pixels", type=int, default=1280 * 28 * 28)
     p.add_argument("--select", choices=["auto", "selector", "topk"], default="topk")
     p.add_argument("--k", type=int, default=10, help="topk: numbers per page")
-    p.add_argument("--beams", type=int, default=8, help="beam search width")
+    p.add_argument("--beams", type=int, default=6, help="beam search width")
     p.add_argument("--keep", type=int, default=4, help="distinct candidate numbers kept per number")
     p.add_argument("--max-new-tokens", type=int, default=6, help="enough for a number (digits are single tokens)")
-    p.add_argument("--max-prefix-tokens", type=int, default=3072)
+    p.add_argument("--max-prefix-tokens", type=int, default=768, help="transcript context before the number (memory)")
     p.add_argument("--exclude-students", default="")
     p.add_argument("--device", type=int, default=0)
     p.add_argument("--shard", default=None, help="i/n: every n-th page starting at i")

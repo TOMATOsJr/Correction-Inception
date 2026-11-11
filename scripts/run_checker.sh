@@ -229,7 +229,7 @@ if has scale; then
   echo "=== scale: $CHECKER on the $K most doubtful numbers per page, beam candidates; left out: ${TRAIN_LIST:-none}"
   common="--dir $dir --edu-data $EDU --images $IMAGES --target-root $QWEN_ROOT --model-dir qwen3b_ft --select topk \
     --k $K --reader hf:Qwen/Qwen2.5-VL-3B-Instruct --max-pixels $PIX --exclude-students '$TRAIN_LIST' $SLIMIT"
-  bcmd="python src/detect/beam_candidates.py $common --adapter $ADAPTER --prompt-file $PROMPT --beams 8 --keep 4"
+  bcmd="python src/detect/beam_candidates.py $common --adapter $ADAPTER --prompt-file $PROMPT --beams 6 --keep 4"
   vcmd="python src/detect/verify_choice.py $common --adapter $OUT/$CHECKER --beams --max-cands $CANDS"
   for cmd in "$bcmd" "$vcmd"; do
     if [ "$NGPU" -ge 2 ]; then pair_run "$cmd --shard 0/2" "$cmd --shard 1/2"; else eval "$cmd --device 0"; fi

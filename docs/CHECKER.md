@@ -109,7 +109,7 @@ for 59, 12 for 123 or 540 for 54. The `scale` stage reuses the trained checker a
 - **More numbers:** the 10 most doubtful per page (`LMA_K`). The checker keeps 99.5% of correct numbers, so checking
   more should add fixes at little cost.
 - **Top-k whole numbers as options** (`src/detect/beam_candidates.py`): the reader (verbatim LoRA, transcription prompt)
-  reads the page with the transcript fed in up to the number, then generates the number with beam search (width 8);
+  reads the page with the transcript fed in up to the number, then generates the number with beam search (width 6, last ~768 transcript tokens as context);
   the 4 best distinct numbers become the first candidates, then the old digit candidates (`LMA_CANDS=4` in total).
   Appearance only: it sees the page and the transcript up to the number, never the rubric or the lines after it.
 - The checker judges each candidate against the written value (A/B, both orders), and the same rule decides
