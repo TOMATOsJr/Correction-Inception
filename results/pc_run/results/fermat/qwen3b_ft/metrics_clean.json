@@ -1,0 +1,18 @@
+{
+  "name": "qwen3b_ft",
+  "n": 425,
+  "n_erroneous_evaluable": 342,
+  "silent_correction_rate_percent": 14.04,
+  "token_error_rate_vs_written_percent": 8.49,
+  "silent_correction_by_handwriting_style": {
+    "True": [
+      12.8,
+      304
+    ],
+    "False": [
+      23.7,
+      38
+    ]
+  },
+  "note": "red error markers stripped from pert_a and output (see fermat_data.strip_red)"
+}

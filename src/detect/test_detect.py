@@ -244,6 +244,56 @@ def test_expand_number_grammar():
     assert "5.2." not in {t for _, _, t, _ in keep} and "5.2," not in {t for _, _, t, _ in keep} and done
 
 
+def test_arbiter_thresholds():
+    import numpy as np
+    from arbiter import budget_threshold, net_threshold
+    p = np.array([0.95, 0.9, 0.8, 0.7, 0.6, 0.5])
+    good = np.array([1, 1, 0, 1, 0, 0], bool)
+    bad = np.array([0, 0, 1, 0, 1, 1], bool)
+    assert net_threshold(p, good, bad) == 0.9          # +2 at 0.9; +2 again at 0.7 but the higher threshold wins
+    assert net_threshold(p, good & False, bad) == 1.01  # never change when nothing nets positive
+    broken = np.array([0, 0, 1, 0, 1, 1], bool)
+    assert budget_threshold(p, broken, n_correct=100, max_fc=0.01) == 0.7  # one broken allowed
+    assert budget_threshold(p, broken, n_correct=10, max_fc=0.01) == 0.9   # none allowed
+
+
+def test_arbiter_evidence_and_heldout_decisions():
+    import numpy as np
+    import pandas as pd
+    from arbiter import CHANGE, evidence, labels_of, learn_actions
+    from selector import student_folds
+    rng = np.random.default_rng(0)
+    rows = []
+    for k in range(400):
+        mis = k % 4 == 0
+        good = mis and k % 8 == 0
+        pc = rng.uniform(0.8, 1.0) if good else rng.uniform(0.0, 0.85)
+        best = "54" if good else "58"
+        rows.append({"page": f"p{k // 10}", "student": f"s{(k // 4) % 8}", "i": k, "text": "59", "gold": "54" if mis else "59",
+                     "misread": int(mis), "best": best, "p_change": pc, "consistent": True,
+                     "p_cands": f"{best}:{pc:.3f}|50:0.1", "p_blank": pc / 3, "beams": "54|58", "neg_gap": 0.5,
+                     "cand_is_key": False, "orig_is_key": False})
+    df = pd.DataFrame(rows)
+    X = evidence(df)
+    assert X.loc[0, "in_beams"] == 1 and X.loc[0, "beam_rank"] == 0 and X.loc[1, "beam_rank"] == 1
+    assert X.loc[0, "one_digit"] == 1 and abs(X.loc[0, "margin"] - (df.loc[0, "p_change"] - 0.1)) < 1e-3
+    good, wrong, broken = labels_of(df)
+    assert good.sum() == 50 and wrong.sum() == 50 and broken.sum() == 300
+    res = learn_actions(df, X, student_folds(df["student"], 4))
+    ch = res["actions"]["net"] == CHANGE
+    assert (ch & good).sum() > 30 and (ch & ~good).sum() < 10   # separable: mostly the good changes
+
+
+def test_fermat_audit_labels():
+    from fermat_audit import label_sample
+    pert = r"x = 2 + 3 = \textcolor{red}{6} \Rightarrow y = 12"
+    orig = r"x = 2 + 3 = 5 \Rightarrow y = 12"
+    kinds = {r["raw"]: r["kind"] for r in label_sample(0, "x = 2 + 3 = 5 \\Rightarrow y = 13", pert, orig, "g0")}
+    assert kinds == {"2": "ok", "3": "ok", "5": "silent", "13": "misread"}
+    keep = {r["raw"]: (r["kind"], r["gold"]) for r in label_sample(0, "x = 2 + 3 = 6 \\Rightarrow y = 12", pert, orig, "g0")}
+    assert keep["6"] == ("ok", "6")  # the student's error preserved: what the Auditor wants
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_"):

@@ -18,6 +18,8 @@
 #   LMA_GRADE=1 STAGES=correct sbatch job.sh   + grading, once the correction table shows a net gain
 #   STAGES=scale sbatch job.sh              trained checker on 10 numbers/page + beam candidates (no training, ~5-6 h)
 #   LMA_SCALE_LIMIT=5 STAGES=scale sbatch job.sh   quick test of that first (~20 min)
+#   STAGES="arbiter clean_eval audit" sbatch job.sh   learned Arbiter (CPU) + FERMAT re-check without red markers
+#                                           + the Auditor's silent-correction detectors on FERMAT (~1-1.5 h)
 # run_checker.sh uses both GPUs itself (two trainings / evaluations / verify shards at once): no CUDA_VISIBLE_DEVICES.
 
 cd "/home2/prabhavsai.kollipara/Correction-Inception/"

@@ -4,6 +4,7 @@ The checker is the Advocate's and the Auditor's main tool (src/detect/verify_cho
 from src/detect/choice_prompt.py). The untuned reader answers it at chance (it picks the true value over the written
 one 45% of the time), so here it gets training pairs whose right answer is always "what is written on the page":
 
+  (FERMAT's red error markers, \\textcolor{red}{..}, are removed from pert_a first: they give the error away.)
   silent     FERMAT: the student wrote a wrong value (pert_a) where the correct solution (orig_a) has another.
              Options: written (wrong) vs correct. Right answer: the written, wrong one. This is the
              silent-correction test: a reader that prefers "what makes the maths right" fails it.
@@ -85,6 +86,8 @@ def both_orders(base: dict, right: str, wrong: str) -> list[dict]:
 
 def fermat_pairs(idx: int, pert: str, orig: str, split: str, rng: random.Random) -> list[dict]:
     """Pairs from one FERMAT row. 'silent': written wrong value vs the correct one; 'lookalike': unchanged numbers."""
+    from fermat_data import strip_red
+    pert = strip_red(pert)  # the red error markers would give the answer away (and do not exist at test time)
     p, o = tokens_with_offsets(pert), tokens_with_offsets(orig)
     sm = SequenceMatcher(None, [t for t, _, _ in o], [t for t, _, _ in p], autojunk=False)
     out, kept = [], []

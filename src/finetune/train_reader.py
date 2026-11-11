@@ -14,7 +14,7 @@ from pathlib import Path
 import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from fermat_data import PROMPT, load_fermat  # noqa: E402
+from fermat_data import PROMPT, load_fermat, strip_red  # noqa: E402
 
 
 def main():
@@ -71,7 +71,8 @@ def main():
         texts, prompts, images = [], [], []
         for ex in batch:
             user = {"role": "user", "content": [{"type": "image"}, {"type": "text", "text": PROMPT}]}
-            asst = {"role": "assistant", "content": [{"type": "text", "text": ex["pert_a"]}]}
+            # markers stripped: the reader trained on the raw pert_a learned to write \textcolor{red}{..} itself
+            asst = {"role": "assistant", "content": [{"type": "text", "text": strip_red(ex["pert_a"])}]}
             texts.append(proc.apply_chat_template([user, asst], tokenize=False))
             prompts.append(proc.apply_chat_template([user], tokenize=False, add_generation_prompt=True))
             images.append(ex["image"].convert("RGB"))

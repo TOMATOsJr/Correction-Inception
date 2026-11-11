@@ -126,6 +126,35 @@ Read the new row `checker_fe_k10_beams`: *True value among options* (was 34%) an
 beams raised the ceiling; then *Fixed* vs *Broken* + *Changed to another wrong value*. `sweep_metrics.csv` lists other
 rules with their `net_fixes`. Commit `results/checker` as before.
 
+## Arbiter, clean FERMAT check, Auditor (`STAGES="arbiter clean_eval audit"`)
+
+**Learned Arbiter** (`src/detect/arbiter.py`, CPU). The scale run showed the options are now good (true value offered
+for 69% of the checked misreads) but the decision is weak: on the checker's probability alone, the 1% false-change
+budget forces a 0.98 threshold. The Arbiter combines every tool's evidence for each checked number: checker probability
+and margin, order agreement, blank-image probability, beam rank and probability, reader doubt (`neg_gap`, `nll`,
+`dent`), edit shape and answer-key flags. It's a logistic model trained on other students, whose threshold is the one
+with the most net fixes on those students (no change at all unless that is positive; a 1%-budget rule is reported too).
+It writes `<run>/arbiter/` with metrics, decisions, corrected transcripts and their transcript diff.
+
+**FERMAT's red markers (a bug found on 12 Nov).** FERMAT's written answers (`pert_a`) mark every planted error as
+`\textcolor{red}{..}`. Two consequences:
+- The reader's FERMAT metrics compared transcripts with the marked text, so preserved errors counted as silent
+  corrections. Re-scored with the markers stripped (`src/finetune/rescore_fermat.py`, `metrics_clean.json`):
+  base reader 82.5% → **22.2%** of answers silently corrected, fine-tuned reader 76.3% → **14.0%**; token error
+  35.8% → **34.9%** and 16.5% → **8.5%**. Fine-tuning reduces silent correction by more than a third; the old
+  conclusion "training barely reduces silent correction" was wrong. `fermat_data.reversion` / `cer` now strip markers.
+- The checker's FERMAT pairs kept the marker in the shown line (46% of the silent test pairs had it right at `[?]`),
+  a shortcut, and the markers broke the alignment so only 78 silent test pairs were built (382 without). `clean_eval`
+  re-measures every model on clean pairs. The EDU numbers are unaffected (no markers there).
+
+**Auditor on FERMAT** (`src/detect/fermat_audit.py`). Our transcripts of FERMAT's test images, numbers labelled ok /
+silent correction / misread against what is written. The fine-tuned reader silently corrects only 18 numbers (31 for
+the base reader) out of ~8,900, and 50 of 848 planted-error tokens overall (most are letters and operators such as
+`a`→`x`, `-`→`+`). So there is little for an Auditor to fix here; `audit` measures the detectors (confidence with the
+page and with a blank image, a learned detector held out by problem) and `LMA_AUDIT_FULL=1` also runs beams → checker
+→ Arbiter on the flagged numbers. On EDU, the Auditor's tools act as guards: without the blank-image guard no
+decision rule can change anything within budget (`sweep_metrics.csv`).
+
 ## Next, once the checker works
 - The Auditor's own tools: the blank-image test (already computed per change as `p_blank`), the step recompute, and the
   answer-key lookup.

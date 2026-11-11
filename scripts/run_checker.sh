@@ -14,6 +14,9 @@
 #            on students the checker never saw -> change / keep decisions -> transcript diff [+ grades: LMA_GRADE=1]
 #   scale    (not in the default list: STAGES=scale) the trained checker on the K most doubtful numbers per page with
 #            the reader's top-k whole-number beam candidates -> decisions -> what-if sweep -> transcript diff
+#   arbiter  (STAGES=arbiter, CPU) the learned Arbiter over all tool evidence for every correct_* run
+#   clean_eval (STAGES=clean_eval) every model re-measured on FERMAT pairs without the red error markers
+#   audit    (STAGES=audit) the Auditor's silent-correction detectors on FERMAT, exact labels [LMA_AUDIT_FULL=1: + fixes]
 #
 # Overrides (env vars):
 #   STAGES="test pairs train eval correct"
@@ -242,6 +245,75 @@ if has scale; then
     if [ "${LMA_GRADE:-0}" = 1 ]; then
       python src/eval/grade_impact.py --data-root "$EDU" --target-root "$dir/Outputs/$v" --target-model-dir qwen3b_ft \
         --grader hf-text:Qwen/Qwen2.5-7B-Instruct --name "checker_${tag}_${v}_qwen7b" --workers 8 || true
+    fi
+  done
+  python src/finetune/checker_table.py --eval "$OUT/eval" --correct "$OUT"
+fi
+# ---------------------------------------------------------------- arbiter (STAGES=arbiter; CPU)
+# The learned Arbiter (src/detect/arbiter.py) on every correction run that has verify*.csv: all tool evidence combined,
+# student-held-out, threshold = most net fixes on the training students. Writes <run>/arbiter/ + transcript diff.
+if has arbiter; then
+  for dir in "$OUT"/correct_*; do
+    ls "$dir"/verify*.csv >/dev/null 2>&1 || continue
+    tag="${dir##*/correct_}"
+    echo "=== arbiter: $tag"
+    python src/detect/arbiter.py --dir "$dir" --target-root "$QWEN_ROOT" --model-dir qwen3b_ft
+    for v in none corrected; do
+      python src/eval/transcript_diff.py --data-root "$EDU" --target-root "$dir/arbiter/Outputs/$v" \
+        --target-model-dir qwen3b_ft --name "${tag}_arbiter_$v" --out "$dir/arbiter/transcript_diff" || true
+      if [ "${LMA_GRADE:-0}" = 1 ]; then
+        python src/eval/grade_impact.py --data-root "$EDU" --target-root "$dir/arbiter/Outputs/$v" \
+          --target-model-dir qwen3b_ft --grader hf-text:Qwen/Qwen2.5-7B-Instruct \
+          --name "checker_${tag}_arbiter_${v}_qwen7b" --workers 8 || true
+      fi
+    done
+  done
+  python src/finetune/checker_table.py --eval "$OUT/eval" --correct "$OUT"
+fi
+
+# ---------------------------------------------------------------- clean_eval (STAGES=clean_eval; GPU ~40 min)
+# FERMAT's pert_a marks every planted error in red; the first pairs kept the marker in the shown line (46% of the
+# silent test pairs had it right at [?]). Rebuild the FERMAT pairs without markers and re-measure every model.
+if has clean_eval; then
+  need_gpu
+  CPAIRS="$OUT/pairs_clean"
+  [ -f "$CPAIRS/pairs_fermat_test.jsonl" ] || python src/finetune/ab_data.py fermat --out "$CPAIRS"
+  todo=()
+  for spec in base: reader:$ADAPTER checker_f:$OUT/checker_f checker_fe:$OUT/checker_fe; do
+    tag="${spec%%:*}"; ad="${spec#*:}"
+    [ -f "$OUT/eval_clean/$tag/checker_metrics.json" ] && continue
+    [ -n "$ad" ] && [ ! -f "$ad/adapter_config.json" ] && continue
+    a2=""; [ -n "$ad" ] && a2="--adapter $ad"
+    todo+=("python src/finetune/eval_checker.py --pairs $CPAIRS --sources fermat --tag $tag $a2 --max-pixels $PIX \
+      --per-kind $PER_KIND --out $OUT/eval_clean")
+  done
+  while [ "${#todo[@]}" -ge 2 ]; do pair_run "${todo[0]}" "${todo[1]}"; todo=("${todo[@]:2}"); done
+  [ "${#todo[@]}" = 1 ] && eval "${todo[0]} --device 0"
+  python src/finetune/checker_table.py --eval "$OUT/eval" --correct "$OUT"
+fi
+
+# ---------------------------------------------------------------- audit (STAGES=audit; GPU ~20-30 min)
+# The Auditor on FERMAT (exact labels): label the numbers of our base and fine-tuned readers' transcripts (ok / silent
+# correction / misread), score them with the page and with a blank image, and measure the silent-correction detectors.
+# LMA_AUDIT_FULL=1 also runs beams -> checker -> Arbiter on the fine-tuned reader's flagged numbers (few positives).
+if has audit; then
+  need_gpu
+  for m in qwen3b_ft qwen3b_base; do
+    pred="results/pc_run/results/fermat/$m/predictions.jsonl"
+    [ -f "$pred" ] || { echo "=== audit: no $pred, skipped"; continue; }
+    ad="$OUT/audit_fermat_$m"
+    echo "=== audit: $m"
+    [ -f "$ad/labels.csv" ] || python src/detect/fermat_audit.py label --pred "$pred" --out "$ad"
+    acmd="python src/detect/fermat_audit.py score --out $ad --adapter $ADAPTER --max-pixels $PIX $LIMIT"
+    if [ "$NGPU" -ge 2 ]; then pair_run "$acmd --shard 0/2" "$acmd --shard 1/2"; else eval "$acmd --device 0"; fi
+    python src/detect/fermat_audit.py detect --out "$ad" --k 4
+    if [ "${LMA_AUDIT_FULL:-0}" = 1 ] && [ "$m" = qwen3b_ft ]; then
+      CK="${LMA_CHECKER:-checker_fe}"
+      for sub in "beams --adapter $ADAPTER" "verify --adapter $OUT/$CK"; do
+        c="python src/detect/fermat_audit.py $sub --out $ad --max-pixels $PIX $LIMIT"
+        if [ "$NGPU" -ge 2 ]; then pair_run "$c --shard 0/2" "$c --shard 1/2"; else eval "$c --device 0"; fi
+      done
+      python src/detect/fermat_audit.py decide --out "$ad"
     fi
   done
   python src/finetune/checker_table.py --eval "$OUT/eval" --correct "$OUT"

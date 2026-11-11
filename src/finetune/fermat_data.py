@@ -28,6 +28,30 @@ def tokens(s: str) -> list[str]:
     return _TOK.findall(s or "")
 
 
+def strip_red(s: str) -> str:
+    """FERMAT's pert_a marks every planted error as \\textcolor{red}{...} (a few use other colours): keep the
+    content, drop the marker (nested braces allowed). Anything shown to a model must be stripped, or the marker gives
+    away where the error is."""
+    s = s or ""
+    out, i = [], 0
+    while True:
+        m = _COLOR.search(s, i)
+        if not m:
+            out.append(s[i:])
+            return "".join(out)
+        out.append(s[i:m.start()])
+        k, depth = m.end(), 1
+        start = k
+        while k < len(s) and depth:
+            depth += {"{": 1, "}": -1}.get(s[k], 0)
+            k += 1
+        out.append(s[start:k - 1] if depth == 0 else s[start:])
+        i = k
+
+
+_COLOR = re.compile(r"\\textcolor\{[A-Za-z]+\}\{")
+
+
 def norm(s: str) -> str:
     return " ".join(tokens(s))
 
@@ -77,8 +101,10 @@ def _best_ratio(window: list[str], hay: list[str]) -> float:
 
 
 def reversion(output: str, pert_a: str, orig_a: str, ctx: int = 3):
-    """Return True (silently corrected), False (error preserved) or None (not evaluable)."""
-    p, o, out = tokens(pert_a), tokens(orig_a), tokens(output)
+    """Return True (silently corrected), False (error preserved) or None (not evaluable).
+    The red error markers are stripped from pert_a (and from the output): left in, the written window never matches
+    a transcript, and preserved errors were scored as corrections (82.5% / 76.3% reported vs 22.2% / 14.0% real)."""
+    p, o, out = tokens(strip_red(pert_a)), tokens(orig_a), tokens(strip_red(output))
     ops = [op for op in SequenceMatcher(None, o, p, autojunk=False).get_opcodes() if op[0] != "equal"]
     if not ops or not out:
         return None
@@ -96,8 +122,8 @@ def reversion(output: str, pert_a: str, orig_a: str, ctx: int = 3):
 
 
 def cer(output: str, ref: str) -> float:
-    """Token-level error rate of output vs reference (1 - matched/len(ref))."""
-    r, h = tokens(ref), tokens(output)
+    """Token-level error rate of output vs reference (1 - matched/len(ref)); colour markers stripped from both."""
+    r, h = tokens(strip_red(ref)), tokens(strip_red(output))
     if not r:
         return 0.0
     m = sum(b.size for b in SequenceMatcher(None, r, h, autojunk=False).get_matching_blocks())
@@ -110,4 +136,5 @@ if __name__ == "__main__":  # tiny self-test
     assert reversion(r"x = 2 + 3 = 5 \Rightarrow y = 12 / 5", pert, orig) is True
     assert reversion(r"x=2+3=6 \Rightarrow y = 12/6", pert, orig) is False
     assert split_of("q1") == split_of("q1")
+    assert strip_red(r"a \textcolor{red}{t}^2 + \textcolor{green}{\frac{1}{2}} = 5") == r"a t^2 + \frac{1}{2} = 5"
     print("fermat_data self-test passed")
