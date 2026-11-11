@@ -14,11 +14,12 @@ Accuracy = share of pairs where the right option gets more than half the probabi
 | FERMAT correct number: keeps it | 93.5% (83% both orders, n=400) | 93.0% (80% both orders, n=400) | 99.2% (98% both orders, n=400) | 98.2% (98% both orders, n=400) |
 
 
-## 2. Automatic correction with the checker (top 3 doubtful numbers per page, unseen students)
+## 2. Automatic correction with the checker (unseen students; `_k10_beams` = 10 numbers per page with beam candidates, otherwise the 3 most doubtful)
 
 Success = more *Fixed* than *Correct numbers broken* + *Changed to another wrong value*, and fewer wrong numbers per exam after than before.
 
-| Checker | Numbers checked | of them misreads | Fixed | Changed to another wrong value | Correct numbers broken | Misreads before → after | Wrong numbers per exam before → after |
-|---|---|---|---|---|---|---|---|
-| checker_fe | 569 | 106 | **5** | 0 | **3** | 304 → 302 | 12.958 → 12.951 |
-| reader | 569 | 106 | **2** | 1 | **4** | 304 → 306 | 12.958 → 12.965 |
+| Run | Numbers checked | of them misreads | True value among options | …among beams | Fixed | Changed to another wrong value | Correct numbers broken | Misreads before → after | Wrong numbers per exam before → after |
+|---|---|---|---|---|---|---|---|---|---|
+| checker_fe | 569 | 106 | 34% | – | **5** | 0 | **3** | 304 → 302 | 12.958 → 12.951 |
+| checker_fe_k10_beams | 1826 | 206 | 69% | 69% | **10** | 2 | **7** | 304 → 301 | 12.958 → 12.951 |
+| reader | 569 | 106 | 34% | – | **2** | 1 | **4** | 304 → 306 | 12.958 → 12.965 |
