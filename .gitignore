@@ -39,6 +39,8 @@ results/checker*/pairs/*.jsonl
 results/checker*/checker_*/
 results/checker*/detect/
 results/checker*/correct_*/*.csv
+!results/checker*/correct_*/sweep_metrics.csv
+results/**/beams*.csv
 results/checker*/**/*.log
 results/checker*/**/per_sample.csv
 # correction runs write the same per-number files as detection

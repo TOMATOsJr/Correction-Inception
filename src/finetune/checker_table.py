@@ -57,14 +57,19 @@ def correction_table(run: Path) -> str:
             f = d / "transcript_diff" / f"{d.name[len('correct_'):]}_{v}" / "metrics.json"
             if f.exists():
                 diff[v] = json.loads(f.read_text()).get("mean_number_mismatches")
-        rows.append(f"| {d.name[len('correct_'):]} | {h['verified']} | {h['verified_misreads']} | **{h['auto_fixed']}** | "
+        vm = d / "verify_metrics.json"
+        v = json.loads(vm.read_text()) if vm.exists() else {}
+        pct = (lambda x: f"{100 * x:.0f}%" if isinstance(x, (int, float)) else "–")
+        rows.append(f"| {d.name[len('correct_'):]} | {h['verified']} | {h['verified_misreads']} | "
+                    f"{pct(v.get('candidate_recall'))} | {pct(v.get('beam_recall'))} | **{h['auto_fixed']}** | "
                     f"{h['auto_wrong_fix']} | **{h['auto_broken_correct']}** | {h['misreads_before']} → "
                     f"{h['misreads_after_auto']} | {diff.get('none', '–')} → {diff.get('corrected', '–')} |")
     if not rows:
         return ""
-    return ("| Checker | Numbers checked | of them misreads | Fixed | Changed to another wrong value | "
-            "Correct numbers broken | Misreads before → after | Wrong numbers per exam before → after |\n"
-            "|---|---|---|---|---|---|---|---|\n" + "\n".join(rows) + "\n")
+    return ("| Run | Numbers checked | of them misreads | True value among options | …among beams | Fixed | "
+            "Changed to another wrong value | Correct numbers broken | Misreads before → after | "
+            "Wrong numbers per exam before → after |\n"
+            "|---|---|---|---|---|---|---|---|---|---|\n" + "\n".join(rows) + "\n")
 
 
 def main():
@@ -86,7 +91,8 @@ def main():
           "number* stays near 100%.\n", accuracy_table(summary) if summary else "(no evaluations yet)\n"]
     ct = correction_table(run)
     if ct:
-        md += ["\n## 2. Automatic correction with the checker (top 3 doubtful numbers per page, unseen students)\n",
+        md += ["\n## 2. Automatic correction with the checker (unseen students; `_k10_beams` = 10 numbers per page with "
+               "beam candidates, otherwise the 3 most doubtful)\n",
                "Success = more *Fixed* than *Correct numbers broken* + *Changed to another wrong value*, and fewer "
                "wrong numbers per exam after than before.\n", ct]
     (run / "CHECKER_RESULTS.md").write_text("\n".join(md))

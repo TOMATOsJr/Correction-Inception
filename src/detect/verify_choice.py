@@ -48,7 +48,8 @@ from evaluate_detection import _num, auroc  # noqa: E402
 from labels import label_page, page_files, page_text  # noqa: E402
 from choice_prompt import CONFUSE, QUESTION, ab_token_ids, encode, masked_line  # noqa: E402,F401
 
-FIELDS = ["page", "student", "i", "start", "end", "text", "gold", "misread", "neg_gap", "other", "cands", "p_cands",
+FIELDS = ["page", "student", "i", "start", "end", "text", "gold", "misread", "neg_gap", "other", "beams", "cands",
+          "p_cands",
           "best", "p_change", "consistent", "p_blank", "cand_is_key", "orig_is_key", "propose"]
 _KEYNUM = re.compile(r"(?<![\w.])(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?|(?<![\w\d])\.\d+")
 
@@ -130,11 +131,15 @@ def metrics(df: pd.DataFrame) -> dict:
     def is_gold(r, v):
         return v is not None and v == float(r["gold"])
     gold_in = mis.apply(lambda r: any(is_gold(r, _num(c)) for c in str(r["cands"]).split("|") if c), axis=1)
+    beams = mis["beams"].fillna("").astype(str) if "beams" in mis else pd.Series("", index=mis.index)
+    gold_in_beams = pd.Series([any(is_gold(r, _num(c)) for c in b.split("|") if c)
+                               for (_, r), b in zip(mis.iterrows(), beams)], index=mis.index, dtype=bool)
     fixed = mis.apply(lambda r: r["propose"] and is_gold(r, _num(r["best"])), axis=1).astype(bool)
     rate = (lambda s: round(float(s.mean()), 4) if len(s) else None)
     y = df["misread"].values
     return {"flagged": len(df), "flagged_misreads": len(mis),
-            "candidate_recall": rate(gold_in), "fix_rate": rate(fixed),
+            "candidate_recall": rate(gold_in), "beam_recall": rate(gold_in_beams) if beams.str.len().any() else None,
+            "fix_rate": rate(fixed),
             "wrong_fix_rate": rate(mis["propose"] & ~fixed), "false_change_rate": rate(ok["propose"]),
             "inconsistent_rate": rate(~df["consistent"]),
             "auroc_p_change": round(auroc(y, df["p_change"].values.astype(float)), 4),
@@ -185,6 +190,8 @@ def main():
     p.add_argument("--device", type=int, default=0)
     p.add_argument("--shard", default=None, help="i/n: every n-th page starting at i")
     p.add_argument("--limit", type=int)
+    p.add_argument("--beams", action="store_true", help="use beams*.csv in --dir (beam_candidates.py: the reader's "
+                   "top-k whole numbers) as the first candidates")
     p.add_argument("--exclude-students", default="", help="comma-separated students to skip (e.g. the ones a "
                    "fine-tuned checker was trained on, so every reported number is on unseen students)")
     a = p.parse_args()
@@ -212,6 +219,13 @@ def main():
     asker = ChoiceAsker(TokenScorer(a.reader.split(":", 1)[-1], a.adapter, a.max_pixels, a.device))
     deadline = float(os.environ.get("LMA_DEADLINE", "0") or 0)
     keys: dict[str, set] = {}
+    beams: dict[tuple, list] = {}
+    if a.beams:
+        bf = sorted(d.glob("beams*.csv"))
+        if not bf:
+            raise SystemExit(f"--beams: no beams*.csv in {d}; run beam_candidates.py first")
+        for _, b in pd.concat([pd.read_csv(f, dtype={"beams": str}) for f in bf]).iterrows():
+            beams[(b["page"], int(b["i"]))] = [c for c in str(b["beams"] if pd.notna(b["beams"]) else "").split("|") if c]
     for pid, md, img in tqdm(todo, desc="verifying"):
         if deadline and time.time() > deadline:
             print("time budget reached: stopping (re-run to continue)", file=sys.stderr)
@@ -231,7 +245,8 @@ def main():
             s, e = int(r["start"]), int(r["end"])
             x = answer[s:e]
             ov = other.get(int(r["i"]), "")
-            cands = candidates(x, r["alts"], a.max_cands, first=(ov,))
+            bm = beams.get((pid, int(r["i"])), [])
+            cands = candidates(x, r["alts"], a.max_cands, first=(ov, *bm))
             line = masked_line(answer, s, e)
             view = crop_band(image, s, len(answer), a.crop_band)
             scored = [(c, *asker.challenge(view, line, x, c)) for c in cands]
@@ -242,7 +257,7 @@ def main():
                 p_blank = round(asker.challenge(blank, line, x, dec["best"])[0], 5)
             bv, xv = _num(dec["best"]), _num(x)
             rows.append({"page": pid, "student": r["student"], "i": r["i"], "start": s, "end": e, "text": x,
-                         "gold": r["gold"], "misread": r["misread"], "neg_gap": r["neg_gap"], "other": ov,
+                         "gold": r["gold"], "misread": r["misread"], "neg_gap": r["neg_gap"], "other": ov, "beams": "|".join(bm),
                          "cands": "|".join(cands), "p_cands": "|".join(f"{c}:{pc:.4f}" for c, pc, _ in scored),
                          "best": dec["best"], "p_change": dec["p_change"], "consistent": dec["consistent"],
                          "p_blank": p_blank, "cand_is_key": bool(bv is not None and bv in keys[qid]),

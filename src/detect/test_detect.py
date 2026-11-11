@@ -180,6 +180,32 @@ def test_metrics():
     assert at_k(df, "s", 1) == (0.5, 0.5)  # page a flags its misread, page b flags a false alarm
 
 
+def test_beam_candidates_parse_and_dedupe():
+    from beam_candidates import distinct_candidates, leading_number
+    assert leading_number("5.9 V = I R$") == "5.9" and leading_number(" 540}") == "540"
+    assert leading_number("72,000 \\Omega") == "72,000" and leading_number(".25 A") == ".25"
+    assert leading_number("$x") is None
+    conts = [("59$", 0.5), ("59 V", 0.2), ("5.9$", 0.1), ("54$", 0.08), ("590", 0.05), ("x", 0.01), ("54.0", 0.03)]
+    got = distinct_candidates(conts, "59", 4)
+    assert [c for c, _ in got] == ["5.9", "54", "590"]  # written value dropped, 54 == 54.0 merged
+    assert abs(got[1][1] - 0.11) < 1e-9
+    assert len(distinct_candidates(conts, "59", 2)) == 2
+
+
+def test_verify_metrics_beam_recall():
+    import pandas as pd
+    from verify_choice import metrics
+    df = pd.DataFrame([
+        {"misread": 1, "gold": "5.9", "beams": "5.9|54", "cands": "5.9|54", "best": "5.9", "propose": True,
+         "consistent": True, "p_change": 0.9, "neg_gap": 0.5},
+        {"misread": 1, "gold": "12", "beams": "123", "cands": "123|128", "best": "", "propose": False,
+         "consistent": True, "p_change": 0.1, "neg_gap": 0.4},
+        {"misread": 0, "gold": "", "beams": "", "cands": "1|7", "best": "", "propose": False,
+         "consistent": True, "p_change": 0.2, "neg_gap": 0.1}])
+    m = metrics(df)
+    assert m["beam_recall"] == 0.5 and m["candidate_recall"] == 0.5 and m["fix_rate"] == 0.5
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_"):

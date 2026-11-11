@@ -12,6 +12,8 @@
 #   eval     base model, reader LoRA, checker_f, checker_fe on held-out pairs -> results/checker/eval/summary.json
 #   correct  the top-3 most doubtful numbers per page checked by the reader (old way) and by the best checker,
 #            on students the checker never saw -> change / keep decisions -> transcript diff [+ grades: LMA_GRADE=1]
+#   scale    (not in the default list: STAGES=scale) the trained checker on the K most doubtful numbers per page with
+#            the reader's top-k whole-number beam candidates -> decisions -> what-if sweep -> transcript diff
 #
 # Overrides (env vars):
 #   STAGES="test pairs train eval correct"
@@ -21,6 +23,8 @@
 #   LMA_CHECKER=auto             checker used in 'correct': auto (best edu/misread accuracy) | checker_f | checker_fe
 #   LMA_CORRECT_BASELINE=1       0 = skip the reader-as-checker baseline in 'correct' (saves half the time)
 #   LMA_GRADE=0                  1 = also grade none / corrected with the 7B grader (slow)
+#   LMA_K=10 LMA_CANDS=4         scale: numbers checked per page, candidates per number (beams first)
+#   LMA_SCALE_LIMIT=5            scale: quick test on 5 pages per GPU shard, in correct_<tag>_try (delete it after)
 #   LMA_DATA (default: repo root; everything else is found inside it) / LMA_EDU / LMA_IMAGES / LMA_QWEN_ROOT /
 #   LMA_ADAPTER / LMA_DETECT_DIR / LMA_OUT   path overrides
 set -euo pipefail
@@ -202,6 +206,43 @@ if has correct; then
           --grader hf-text:Qwen/Qwen2.5-7B-Instruct --name "checker_${tag}_${v}_qwen7b" --workers 8 || true
       fi
     done
+  done
+  python src/finetune/checker_table.py --eval "$OUT/eval" --correct "$OUT"
+fi
+# ---------------------------------------------------------------- scale (STAGES=scale; no training)
+# The trained checker on more numbers and better options: the K most doubtful numbers per page (not 3), with the
+# reader's top-k whole-number beam candidates first (they can differ in several digits, the decimal point or the
+# length), then the old digit candidates. Then change / keep decisions, the what-if sweep and the transcript diff.
+if has scale; then
+  need_gpu
+  K="${LMA_K:-10}"; CANDS="${LMA_CANDS:-4}"
+  CHECKER="${LMA_CHECKER:-auto}"
+  [ "$CHECKER" = auto ] && CHECKER=$(python src/finetune/checker_table.py --eval "$OUT/eval" --best)
+  tag="${CHECKER}_k${K}_beams"
+  SLIMIT="$LIMIT"
+  if [ -n "${LMA_SCALE_LIMIT:-}" ]; then SLIMIT="--limit $LMA_SCALE_LIMIT"; tag="${tag}_try"; fi  # quick test
+  dir="$OUT/correct_$tag"
+  mkdir -p "$dir"
+  for src in "$DETECT_DIR"/labels.csv "$DETECT_DIR"/scores*.csv; do
+    [ -e "$dir/$(basename "$src")" ] || ln -s "$(realpath "$src")" "$dir/"
+  done
+  echo "=== scale: $CHECKER on the $K most doubtful numbers per page, beam candidates; left out: ${TRAIN_LIST:-none}"
+  common="--dir $dir --edu-data $EDU --images $IMAGES --target-root $QWEN_ROOT --model-dir qwen3b_ft --select topk \
+    --k $K --reader hf:Qwen/Qwen2.5-VL-3B-Instruct --max-pixels $PIX --exclude-students '$TRAIN_LIST' $SLIMIT"
+  bcmd="python src/detect/beam_candidates.py $common --adapter $ADAPTER --prompt-file $PROMPT --beams 8 --keep 4"
+  vcmd="python src/detect/verify_choice.py $common --adapter $OUT/$CHECKER --beams --max-cands $CANDS"
+  for cmd in "$bcmd" "$vcmd"; do
+    if [ "$NGPU" -ge 2 ]; then pair_run "$cmd --shard 0/2" "$cmd --shard 1/2"; else eval "$cmd --device 0"; fi
+  done
+  python src/detect/correct.py --dir "$dir" --target-root "$QWEN_ROOT" --model-dir qwen3b_ft
+  python src/detect/sweep_correct.py --dir "$dir" || true
+  for v in none corrected; do
+    python src/eval/transcript_diff.py --data-root "$EDU" --target-root "$dir/Outputs/$v" --target-model-dir qwen3b_ft \
+      --name "${tag}_$v" --out "$dir/transcript_diff" || true
+    if [ "${LMA_GRADE:-0}" = 1 ]; then
+      python src/eval/grade_impact.py --data-root "$EDU" --target-root "$dir/Outputs/$v" --target-model-dir qwen3b_ft \
+        --grader hf-text:Qwen/Qwen2.5-7B-Instruct --name "checker_${tag}_${v}_qwen7b" --workers 8 || true
+    fi
   done
   python src/finetune/checker_table.py --eval "$OUT/eval" --correct "$OUT"
 fi

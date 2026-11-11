@@ -101,6 +101,31 @@ Pairs, adapters, `verify*.csv`, `decisions.csv` and transcripts quote student wo
 - The scores are the ones from the last correction run (`results/correction_600k/qwen_ftreader/`, 600k pixels); if that
   folder is missing, `results/detect/qwen3b_ft_ftreader/` is used, or the scores are computed (`LMA_DETECT_DIR` overrides).
 
+## Scale-up run (`STAGES=scale`, no training)
+The first run checked only the 3 most doubtful numbers per page (106 of 304 misreads), and the options contained the
+true value for only 34% of those: the old candidates change one digit at one position, so they can never offer 5.9
+for 59, 12 for 123 or 540 for 54. The `scale` stage reuses the trained checker and fixes both limits:
+
+- **More numbers:** the 10 most doubtful per page (`LMA_K`). The checker keeps 99.5% of correct numbers, so checking
+  more should add fixes at little cost.
+- **Top-k whole numbers as options** (`src/detect/beam_candidates.py`): the reader (verbatim LoRA, transcription prompt)
+  reads the page with the transcript fed in up to the number, then generates the number with beam search (width 8);
+  the 4 best distinct numbers become the first candidates, then the old digit candidates (`LMA_CANDS=4` in total).
+  Appearance only: it sees the page and the transcript up to the number, never the rubric or the lines after it.
+- The checker judges each candidate against the written value (A/B, both orders), and the same rule decides
+  (≤ 1% false changes, tuned on other students). `sweep_correct.py` then tries other rules (error budget, guards).
+
+```bash
+LMA_SCALE_LIMIT=5 STAGES=scale sbatch job.sh    # quick test (~20 min): correct_checker_fe_k10_beams_try
+rm -rf results/checker/correct_*_try
+STAGES=scale sbatch job.sh                      # ~5-6 h on 2 GPUs
+cat results/checker/CHECKER_RESULTS.md
+```
+
+Read the new row `checker_fe_k10_beams`: *True value among options* (was 34%) and *…among beams* show whether the
+beams raised the ceiling; then *Fixed* vs *Broken* + *Changed to another wrong value*. `sweep_metrics.csv` lists other
+rules with their `net_fixes`. Commit `results/checker` as before.
+
 ## Next, once the checker works
 - The Auditor's own tools: the blank-image test (already computed per change as `p_blank`), the step recompute, and the
   answer-key lookup.
