@@ -206,6 +206,44 @@ def test_verify_metrics_beam_recall():
     assert m["beam_recall"] == 0.5 and m["candidate_recall"] == 0.5 and m["fix_rate"] == 0.5
 
 
+def test_number_beam_search_on_a_fake_reader():
+    """expand() driven like BeamReader.continuations, with a fake next-character distribution."""
+    import math
+    from beam_candidates import NUM_CHARS, expand
+    truth = {"": {"5": 0.9, "1": 0.1}, "5": {"9": 0.6, ".": 0.25, "4": 0.15}, "59": {}, "5.": {"9": 1.0},
+             "5.9": {}, "54": {}, "1": {"2": 1.0}, "12": {}}
+
+    def dist(txt):  # log P per NUM_CHARS and log P(end)
+        d = truth.get(txt, {})
+        lp = [math.log(d[c]) if d.get(c) else -1e9 for c in NUM_CHARS]
+        rest = 1 - sum(d.values())
+        return lp, math.log(rest) if rest > 1e-9 else -1e9
+    beams, finished = [("", 0.0)], []
+    for _ in range(6):
+        rows = [dist(t) for t, _ in beams]
+        keep, done = expand(beams, [r[0] for r in rows], [r[1] for r in rows], 4)
+        finished += done
+        if not keep:
+            break
+        beams = [(t, sc) for sc, _, t, _ in keep if sc > -1e8]
+        if not beams:
+            break
+    finished.sort(key=lambda x: -x[1])
+    got = [(t, round(math.exp(sc), 3)) for t, sc in finished if sc > -1e8]
+    assert got[:4] == [("59", 0.54), ("5.9", 0.225), ("54", 0.135), ("12", 0.1)], got
+
+
+def test_expand_number_grammar():
+    from beam_candidates import NUM_CHARS, expand
+    flat = [0.0] * len(NUM_CHARS)
+    keep, done = expand([("", 0.0)], [flat], [0.0], 99)
+    assert {t for _, _, t, _ in keep} == set("0123456789.") and not done  # no ',' first, nothing to finish
+    keep, done = expand([("5.", 0.0)], [flat], [0.0], 99)
+    assert {t for _, _, t, _ in keep} == {f"5.{d}" for d in "0123456789"} and not done
+    keep, done = expand([("5.2", 0.0)], [flat], [0.0], 99)
+    assert "5.2." not in {t for _, _, t, _ in keep} and "5.2," not in {t for _, _, t, _ in keep} and done
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_"):

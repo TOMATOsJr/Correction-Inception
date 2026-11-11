@@ -3,7 +3,7 @@
 The A/B checker can only fix a misread if the true value is one of the options. The old candidates (the reader's top
 digits at ONE position, plus look-alike digit swaps) contain it for only ~34% of misreads: they can never propose
 5.9 for 59, 12 for 123, or 540 for 54. Here the reader reads the page up to the number (the transcript so far is fed
-in, teacher-forced) and then GENERATES the number with beam search: its k most probable complete numbers, which may
+in, teacher-forced) and then GENERATES the number with a digit-by-digit beam search: its k most probable complete numbers, which may
 differ in several digits, the decimal point or the length.
 
 Appearance only, as before: the reader sees the page and the transcript up to the number, never the rubric and never
@@ -66,17 +66,49 @@ def distinct_candidates(continuations: list[tuple[str, float]], written: str, k:
     return [(c, p) for c, p in out[:k]]
 
 
+NUM_CHARS = list("0123456789.,")
+
+
+def expand(beams: list[tuple[str, float]], allowed_logp: list[list[float]], end_logp: list[float],
+           width: int) -> tuple[list[tuple[float, int, str, int]], list[tuple[str, float]]]:
+    """One step of the number beam search, on plain lists (no torch).
+
+    beams[b] = (text so far, log-prob); allowed_logp[b][j] = log P(NUM_CHARS[j] next); end_logp[b] = log P(the number
+    ends here) = log(1 - P(any digit, '.' or ',')). Returns the `width` best extensions as (score, beam, text, char
+    index) and the numbers that end here as (text, score). A number starts with a digit or '.', has one '.' at most,
+    and ends on a digit."""
+    ext, done = [], []
+    for b, (txt, sc) in enumerate(beams):
+        if txt and txt[-1].isdigit():
+            done.append((txt, sc + end_logp[b]))
+        for j, ch in enumerate(NUM_CHARS):
+            if ch == "," and (not txt or not txt[-1].isdigit() or "." in txt):
+                continue
+            if ch == "." and ("." in txt or (txt and not txt[-1].isdigit())):
+                continue
+            if ch.isdigit() is False and txt and txt[-1] in ".,":
+                continue
+            ext.append((sc + allowed_logp[b][j], b, txt + ch, j))
+    ext.sort(key=lambda x: -x[0])
+    return ext[:width], done
+
+
 class BeamReader:
+    """Top-k complete numbers at a position, read from the page.
+
+    The page and the transcript up to the number are read ONCE (one prefill pass at batch 1, like a scoring pass).
+    Then a digit-by-digit beam search runs on the cached keys/values, expanded to the beams: each beam may only add a
+    digit, '.' or ',', or end the number. HF generate() with beams copied the page image and the whole prefill per
+    beam and ran an 11 GB GPU out of memory."""
+
     def __init__(self, scorer, prompt: str, beams: int, max_new_tokens: int, max_prefix_tokens: int):
-        # beams = search width; several beams usually share a number ('59$', '59 V'), so it is wider than the
-        # number of distinct candidates kept (--keep)
         self.s, self.prompt, self.k = scorer, prompt, beams
         self.max_new, self.max_prefix = max_new_tokens, max_prefix_tokens
+        self.char_ids = scorer.torch.tensor(scorer.tok.convert_tokens_to_ids(NUM_CHARS), device=scorer.model.device)
 
     def window(self, prefix: str) -> list[int]:
         """Token ids of the last ~max_prefix tokens of the transcript before the number, starting at a line start
-        when one is near. The whole page stays in view as the image; a long prefix x the beams does not fit an
-        11 GB GPU (8 beams x 3,700 tokens: ~1.5 GB attention per layer)."""
+        when one is near (the whole page stays in view as the image)."""
         enc = self.s.tok(prefix, add_special_tokens=False, return_offsets_mapping=True)
         ids, offs = enc["input_ids"], enc["offset_mapping"]
         if len(ids) <= self.max_prefix:
@@ -87,9 +119,17 @@ class BeamReader:
             cut = nl + 1
         return self.s.tok(prefix[cut:], add_special_tokens=False)["input_ids"]
 
+    def _step_logp(self, logits):
+        """Per beam: log P of each NUM_CHARS token, and log P(the number ends) = log(1 - their total)."""
+        torch = self.s.torch
+        lp = torch.log_softmax(logits.float(), -1)
+        allowed = lp[:, self.char_ids]
+        end = torch.log1p(-allowed.exp().sum(-1).clamp(max=1 - 1e-6))
+        return allowed.tolist(), end.tolist()
+
     def continuations(self, image, prefix: str) -> list[tuple[str, float]]:
-        """The k best continuations after `prefix` (the transcript up to the number), with probabilities."""
-        torch, proc, tok = self.s.torch, self.s.proc, self.s.tok
+        """Up to k complete numbers at the position after `prefix`, best first, with probabilities."""
+        torch, proc = self.s.torch, self.s.proc
         msgs = [{"role": "user", "content": [{"type": "image", "image": image}, {"type": "text", "text": self.prompt}]}]
         text = proc.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True)
         inputs = proc(text=[text], images=[image], return_tensors="pt")
@@ -103,15 +143,29 @@ class BeamReader:
                     inputs[key] = torch.cat([v, fill.to(v.dtype)], 1)
             inputs["input_ids"] = torch.cat([inputs["input_ids"], ans], 1)
         inputs = inputs.to(self.s.model.device)
-        n_in = inputs["input_ids"].shape[1]
         with torch.no_grad():
-            out = self.s.model.generate(**inputs, num_beams=self.k, num_return_sequences=self.k, do_sample=False,
-                                        max_new_tokens=self.max_new, length_penalty=0.0, early_stopping=True,
-                                        output_scores=True, return_dict_in_generate=True)
-        texts = tok.batch_decode(out.sequences[:, n_in:], skip_special_tokens=True)
-        scores = out.sequences_scores.float().tolist() if getattr(out, "sequences_scores", None) is not None \
-            else [0.0] * len(texts)
-        return [(t, math.exp(s)) for t, s in zip(texts, scores)]  # length_penalty=0: sum of log-probs
+            out = self.s.model(**inputs, use_cache=True, logits_to_keep=1)
+            cache = out.past_key_values
+            allowed, end = self._step_logp(out.logits[:, -1])
+            beams: list[tuple[str, float]] = [("", 0.0)]
+            finished: list[tuple[str, float]] = []
+            for _ in range(self.max_new):
+                keep, done = expand(beams, allowed, end, self.k)
+                finished += done
+                finished.sort(key=lambda x: -x[1])
+                # scores only fall: stop once no open beam can beat the k-th finished number
+                if not keep or (len(finished) >= self.k and keep[0][0] < finished[self.k - 1][1]):
+                    beams = []
+                    break
+                cache.reorder_cache(torch.tensor([b for _, b, _, _ in keep], device=self.s.model.device))
+                step = self.char_ids[torch.tensor([j for _, _, _, j in keep], device=self.s.model.device)][:, None]
+                out = self.s.model(input_ids=step, past_key_values=cache, use_cache=True, logits_to_keep=1)
+                cache = out.past_key_values
+                allowed, end = self._step_logp(out.logits[:, -1])
+                beams = [(t, sc) for sc, _, t, _ in keep]
+            finished += [(t, sc + end[b]) for b, (t, sc) in enumerate(beams) if t and t[-1].isdigit()]
+        finished.sort(key=lambda x: -x[1])
+        return [(t, math.exp(sc)) for t, sc in finished]
 
 
 def main():
@@ -134,8 +188,8 @@ def main():
     p.add_argument("--k", type=int, default=10, help="topk: numbers per page")
     p.add_argument("--beams", type=int, default=6, help="beam search width")
     p.add_argument("--keep", type=int, default=4, help="distinct candidate numbers kept per number")
-    p.add_argument("--max-new-tokens", type=int, default=6, help="enough for a number (digits are single tokens)")
-    p.add_argument("--max-prefix-tokens", type=int, default=768, help="transcript context before the number (memory)")
+    p.add_argument("--max-new-tokens", type=int, default=8, help="digits / '.' / ',' per number (single tokens)")
+    p.add_argument("--max-prefix-tokens", type=int, default=2048, help="transcript context before the number")
     p.add_argument("--exclude-students", default="")
     p.add_argument("--device", type=int, default=0)
     p.add_argument("--shard", default=None, help="i/n: every n-th page starting at i")
