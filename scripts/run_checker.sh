@@ -33,6 +33,7 @@
 #   LMA_GRADE=0                  1 = also grade none / corrected with the 7B grader (slow)
 #   LMA_K=10 LMA_CANDS=4         scale: numbers checked per page, candidates per number (beams first)
 #   LMA_SCALE_LIMIT=5            scale: quick test on 5 pages per GPU shard, in correct_<tag>_try (delete it after)
+#   LMA_LIMIT=3                  quick check of the GPU stages on 3 pages per shard, in the real folders (resumable)
 #   LMA_DATA (default: repo root; everything else is found inside it) / LMA_EDU / LMA_IMAGES / LMA_QWEN_ROOT /
 #   LMA_ADAPTER / LMA_DETECT_DIR / LMA_OUT   path overrides
 set -euo pipefail
@@ -81,6 +82,9 @@ if [ "$SMOKE" = 1 ]; then
 else
   PER_KIND=400; LIMIT=""; EPOCHS=1
 fi
+# LMA_LIMIT=N: the GPU stages on N pages / samples per GPU shard, in the REAL output folders (unlike LMA_SMOKE). A quick
+# check before a long run; every stage resumes, so the full run then continues from these pages.
+if [ -n "${LMA_LIMIT:-}" ]; then LIMIT="--limit $LMA_LIMIT"; fi
 
 mkdir -p "$OUT"
 LOG="$OUT/run_$(date +%m%d_%H%M).log"
@@ -402,7 +406,7 @@ if has agents; then
   need_gpu
   run="$OUT/${LMA_AGENTS_RUN:-correct_checker_fe_k10_beams}"
   [ -d "$run" ] || { echo "no $run: run STAGES=scale first" >&2; exit 1; }
-  alim=""; [ -n "${LMA_AGENTS_LIMIT:-}" ] && alim="--limit $LMA_AGENTS_LIMIT"
+  alim=""; [ -n "${LMA_AGENTS_LIMIT:-${LMA_LIMIT:-}}" ] && alim="--limit ${LMA_AGENTS_LIMIT:-$LMA_LIMIT}"
   python src/agents/ledger_agents.py --dir "$run" --target-root "$QWEN_ROOT" --edu-data "$EDU" \
     --llm hf-text:Qwen/Qwen2.5-7B-Instruct --workers "${LMA_AGENTS_WORKERS:-16}" $alim
   tag="${run##*/correct_}"
