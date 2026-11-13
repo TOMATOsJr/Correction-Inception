@@ -98,6 +98,54 @@ def arbiter_table(run: Path) -> str:
             "|---|---|---|---|---|---|---|---|---|---|\n" + "\n".join(rows) + "\n")
 
 
+def consistency_table(run: Path) -> str:
+    rows = []
+    for f in sorted(run.glob("correct_*/consistency/consistency_metrics.json")):
+        m = json.loads(f.read_text())
+        tag = f.parent.parent.name[len("correct_"):]
+        diff = {}
+        for v in ("none", "corrected"):
+            g = f.parent / "transcript_diff" / f"{tag}_consistency_{v}" / "metrics.json"
+            if g.exists():
+                diff[v] = json.loads(g.read_text()).get("mean_number_mismatches")
+        for rule in ("simple", "required", "veto", "consistency_only"):
+            if rule not in m:
+                continue
+            r = m[rule]
+            dd = f"{diff.get('none', '–')} → {diff.get('corrected', '–')}" if rule == "required" else ""
+            rows.append(f"| {tag} | {rule}{' (main)' if rule == 'required' else ''} | **{r['auto_fixed']}** | "
+                        f"{r['auto_wrong_fix']} | {r['auto_broken_correct']} | **{r['net_fixes']:+d}** | "
+                        f"{r['misreads_before']} → {r['misreads_after_auto']} | {dd} |")
+        dg = m.get("diagnostics", {}).get("patterns", {}).get("challenger elsewhere and written not")
+        if dg:
+            rows.append(f"| {tag} | *pattern share: fixing vs bad changes* | {dg['share_of_fixing_changes']} | | "
+                        f"{dg['share_of_bad_changes']} | | | |")
+    if not rows:
+        return ""
+    return ("| Run | Rule | Fixed | Changed to another wrong value | Correct broken | Net | Misreads before → after | "
+            "Wrong numbers per exam before → after |\n|---|---|---|---|---|---|---|---|\n" + "\n".join(rows) + "\n")
+
+
+def edu_silent_section(run: Path) -> str:
+    out = []
+    for f in sorted(run.glob("edu_silent/*/edu_silent_metrics.json")):
+        m = json.loads(f.read_text())
+        c = m["categories"]
+        out.append(f"**{m['name']}**: {m['numbers']} numbers on {m['pages']} pages, {m['misreads']} misread. Of the "
+                   f"misreads, **{c.get('toward_key', 0)} towards the answer key** (transcript shows a key value, the "
+                   f"student wrote another: silent-correction-like), {c.get('away_key', 0)} away from it (costing marks), "
+                   f"{c.get('other', 0)} neither. Base rate: {100 * (m['base_rate_correct_numbers_in_key'] or 0):.1f}% of "
+                   f"correctly transcribed numbers are key values; transcript value in the key for "
+                   f"{100 * (m['misreads_whose_transcript_value_is_in_key'] or 0):.1f}% of misreads, written value for "
+                   f"{100 * (m['misreads_whose_written_value_is_in_key'] or 0):.1f}%.")
+        for k, v in (m.get("blank_image") or {}).items():
+            if isinstance(v, dict):
+                out.append(f"- {k}: " + ", ".join(f"{c2} {r['direction_free']}{' (low)' if r['direction'] == 'low' else ''}"
+                                                  for c2, r in v.items()))
+        out.append("")
+    return "\n".join(out)
+
+
 def audit_section(run: Path) -> str:
     root = Path(__file__).resolve().parents[2]
     out = []
@@ -114,12 +162,12 @@ def audit_section(run: Path) -> str:
                 "errors counted as silent corrections:\n",
                 "| Reader | Silent correction (old) | Silent correction (markers stripped) | Token error (old) | Token error (stripped) |",
                 "|---|---|---|---|---|", *reader, ""]
-    for d in sorted(run.glob("audit_fermat_*")):
+    for d in sorted(list(run.glob("audit_fermat_*")) + list(run.glob("audit_fix_*"))):
         ls, dm = d / "labels_summary.json", d / "detect_metrics.json"
         if not ls.exists():
             continue
         lab = json.loads(ls.read_text())
-        out.append(f"**{d.name[len('audit_fermat_'):]}**: {lab['numbers']} numbers, {lab['kinds']}; planted-error spots "
+        out.append(f"**{d.name.replace('audit_fermat_', '').replace('audit_fix_', 'fix step, ')}**: {lab['numbers']} numbers, {lab['kinds']}; planted-error spots "
                    f"{lab['error_spot_numbers']}, silently corrected {100 * lab['silent_share_of_error_spots']:.1f}%.")
         if dm.exists():
             m = json.loads(dm.read_text())
@@ -128,15 +176,22 @@ def audit_section(run: Path) -> str:
                 if a:
                     top = sorted(((k, v) for k, v in a.items() if k != "learned_detector"), key=lambda kv: -abs(kv[1] - 0.5))[:3]
                     out.append(f"- {kind} vs ok: learned detector AUROC **{a['learned_detector']}**; strongest single signals "
-                               + ", ".join(f"{k} {v}" for k, v in top)
+                               "(direction-free; *low* = smaller values mean the error) "
+                               + ", ".join(f"{k} {max(v, 1 - v):.3f}{' (low)' if v < 0.5 else ''}" for k, v in top)
                                + f"; caught in the top {m['k_per_sample']} per answer: {m[f'{kind}_caught_in_top_k']}"
                                  f" of {m[f'{kind}_total']}")
         am = d / "audit_metrics.json"
         if am.exists():
-            r = json.loads(am.read_text())["net"]
-            out.append(f"- fixes (Arbiter, net rule): silent corrections {r['silent_before']} → {r['silent_after']}, misreads "
-                       f"fixed {r['misread_fixed']}, correct numbers broken {r['auto_broken_correct']}; answers silently "
-                       f"corrected {r['silent_correction_rate_before_percent']}% → {r['silent_correction_rate_after_percent']}%")
+            amj = json.loads(am.read_text())
+            for rule, name in (("simple", "simple rule"), ("net", "Arbiter, net rule")):
+                if rule not in amj:
+                    continue
+                r = amj[rule]
+                out.append(f"- fixes ({name}): silent corrections {r['silent_before']} → {r['silent_after']} "
+                           f"(true value offered for {r['silent_fixable']} of the {r['silent_checked']} checked), misreads "
+                           f"fixed {r['misread_fixed']}, changed to another wrong value {r['auto_wrong_fix']}, correct numbers "
+                           f"broken {r['auto_broken_correct']}; answers silently corrected "
+                           f"{r['silent_correction_rate_before_percent']}% → {r['silent_correction_rate_after_percent']}%")
         out.append("")
     return "\n".join(out)
 
@@ -180,6 +235,15 @@ def main():
     au = audit_section(run)
     if au:
         md += ["\n## 5. The Auditor on FERMAT (silent corrections, exact labels)\n", au]
+    cons = consistency_table(run)
+    if cons:
+        md += ["\n## 6. Consistency with the student's own work (unseen students)\n",
+               "Does the challenger (or the written value) appear elsewhere on the page? *required* is the main rule, "
+               "fixed in advance: change only when the challenger does and the written value does not, plus the usual "
+               "checker conditions and threshold (<= 1% of correct numbers changed on the other students).\n", cons]
+    es = edu_silent_section(run)
+    if es:
+        md += ["\n## 7. Silent corrections in the real exams (EDU, via the answer key)\n", es]
     (run / "CHECKER_RESULTS.md").write_text("\n".join(md))
     sys.stdout.write("\n".join(md))
 

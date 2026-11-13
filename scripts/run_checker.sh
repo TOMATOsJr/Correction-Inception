@@ -17,6 +17,10 @@
 #   arbiter  (STAGES=arbiter, CPU) the learned Arbiter over all tool evidence for every correct_* run
 #   clean_eval (STAGES=clean_eval) every model re-measured on FERMAT pairs without the red error markers
 #   audit    (STAGES=audit) the Auditor's silent-correction detectors on FERMAT, exact labels [LMA_AUDIT_FULL=1: + fixes]
+#   consistency (CPU) B1: challenger / written value elsewhere on the page, decision rules on held-out students
+#   edu_silent  (CPU) A2: EDU silent corrections via the answer key, our reader and Gemini
+#   edu_silent_blank (GPU) A2: blank-image scores of the EDU transcripts + the blank-image signal on them
+#   audit_fix   (GPU) A1: Auditor fixes on FERMAT, numbers chosen by the blank-image signal
 #
 # Overrides (env vars):
 #   STAGES="test pairs train eval correct"
@@ -316,6 +320,77 @@ if has audit; then
       python src/detect/fermat_audit.py decide --out "$ad"
     fi
   done
+  python src/finetune/checker_table.py --eval "$OUT/eval" --correct "$OUT"
+fi
+# ---------------------------------------------------------------- consistency (STAGES=consistency; CPU, minutes)
+# B1: does the challenger / the written value appear elsewhere on the page (the student's own work)? Main rule fixed in
+# advance: change only when the challenger does and the written value does not. Every correct_* run with verify*.csv.
+if has consistency; then
+  for dir in "$OUT"/correct_*; do
+    ls "$dir"/verify*.csv >/dev/null 2>&1 || continue
+    tag="${dir##*/correct_}"
+    echo "=== consistency: $tag"
+    python src/detect/consistency.py --dir "$dir" --target-root "$QWEN_ROOT" --model-dir qwen3b_ft
+    for v in none corrected; do
+      python src/eval/transcript_diff.py --data-root "$EDU" --target-root "$dir/consistency/Outputs/$v" \
+        --target-model-dir qwen3b_ft --name "${tag}_consistency_$v" --out "$dir/consistency/transcript_diff" || true
+    done
+  done
+  python src/finetune/checker_table.py --eval "$OUT/eval" --correct "$OUT"
+fi
+
+# ---------------------------------------------------------------- edu_silent (STAGES=edu_silent; CPU, minutes)
+# A2: silent corrections in the real exams, through the rubric's answer key, for our reader and Gemini 2.5 Pro.
+GEMINI_ROOT="$EDU/Observationset_Final/v6_Gemini_2p5"
+if has edu_silent; then
+  python src/detect/edu_silent.py analyse --labels "$DETECT_DIR/labels.csv" --edu-data "$EDU" --name qwen3b_ft \
+    --out "$OUT/edu_silent"
+  if [ -d "$GEMINI_ROOT" ]; then
+    gl="$OUT/edu_silent/gemini25"
+    [ -f "$gl/labels.csv" ] || python src/detect/labels.py --edu-data "$EDU" --target-root "$GEMINI_ROOT" \
+      --model-dir gemini-2.5-pro --out "$gl"
+    python src/detect/edu_silent.py analyse --labels "$gl/labels.csv" --edu-data "$EDU" --name gemini25 --out "$OUT/edu_silent"
+  fi
+  python src/finetune/checker_table.py --eval "$OUT/eval" --correct "$OUT"
+fi
+
+# ---------------------------------------------------------------- edu_silent_blank (STAGES=edu_silent_blank; GPU ~30 min)
+# A2, optional: score our reader's EDU transcripts with a blank image, then test the blank-image signal on them.
+if has edu_silent_blank; then
+  need_gpu
+  bo="$OUT/edu_silent/qwen3b_ft"
+  bcmd="python src/detect/edu_silent.py blank --edu-data $EDU --images $IMAGES --target-root $QWEN_ROOT \
+    --model-dir qwen3b_ft --adapter $ADAPTER --prompt-file $PROMPT --max-pixels $PIX --out $bo $LIMIT"
+  if [ "$NGPU" -ge 2 ]; then pair_run "$bcmd --shard 0/2" "$bcmd --shard 1/2"; else eval "$bcmd --device 0"; fi
+  python src/detect/edu_silent.py analyse --labels "$DETECT_DIR/labels.csv" --edu-data "$EDU" --name qwen3b_ft \
+    --out "$OUT/edu_silent" --blank --scores "$DETECT_DIR"
+  python src/finetune/checker_table.py --eval "$OUT/eval" --correct "$OUT"
+fi
+
+# ---------------------------------------------------------------- audit_fix (STAGES=audit_fix; GPU ~1-2 h)
+# A1: the Auditor's fix step on FERMAT, checking the 4 numbers per answer the blank-image signal finds most suspicious
+# (it separated silent corrections best), then beams -> checker -> decision (simple rule and the Arbiter).
+if has audit_fix; then
+  need_gpu
+  src="$OUT/audit_fermat_qwen3b_ft"
+  ad="$OUT/audit_fix_qwen3b_ft"
+  mkdir -p "$ad"
+  pred="results/pc_run/results/fermat/qwen3b_ft/predictions.jsonl"
+  [ -f "$src/labels.csv" ] || python src/detect/fermat_audit.py label --pred "$pred" --out "$src"
+  if ! ls "$src"/scores*.csv >/dev/null 2>&1; then
+    acmd="python src/detect/fermat_audit.py score --out $src --adapter $ADAPTER --max-pixels $PIX"
+    if [ "$NGPU" -ge 2 ]; then pair_run "$acmd --shard 0/2" "$acmd --shard 1/2"; else eval "$acmd --device 0"; fi
+  fi
+  for f in "$src"/labels.csv "$src"/labels_summary.json "$src"/samples.jsonl "$src"/scores*.csv; do
+    [ -e "$ad/$(basename "$f")" ] || ln -s "$(realpath "$f")" "$ad/"
+  done
+  python src/detect/fermat_audit.py detect --out "$ad" --k "${LMA_AUDIT_K:-4}" --select blank
+  CK="${LMA_CHECKER:-checker_fe}"
+  for sub in "beams --adapter $ADAPTER" "verify --adapter $OUT/$CK"; do
+    c="python src/detect/fermat_audit.py $sub --out $ad --max-pixels $PIX $LIMIT"
+    if [ "$NGPU" -ge 2 ]; then pair_run "$c --shard 0/2" "$c --shard 1/2"; else eval "$c --device 0"; fi
+  done
+  python src/detect/fermat_audit.py decide --out "$ad"
   python src/finetune/checker_table.py --eval "$OUT/eval" --correct "$OUT"
 fi
 echo "=== done. Results: $OUT/CHECKER_RESULTS.md"

@@ -44,6 +44,12 @@ results/**/beams*.csv
 # FERMAT audit: per-number tables and transcripts (bulky; metrics json are committed)
 results/checker*/audit_fermat_*/*.csv
 results/checker*/audit_fermat_*/*.jsonl
+results/checker*/audit_fix_*/*.csv
+results/checker*/audit_fix_*/*.jsonl
+results/checker*/pairs_clean/*.jsonl
+# EDU silent corrections / consistency: per-number tables quote student work
+results/checker*/edu_silent/**/*.csv
+results/checker*/correct_*/consistency/*.csv
 results/checker*/**/*.log
 results/checker*/**/per_sample.csv
 # correction runs write the same per-number files as detection

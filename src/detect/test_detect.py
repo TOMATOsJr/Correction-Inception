@@ -294,6 +294,45 @@ def test_fermat_audit_labels():
     assert keep["6"] == ("ok", "6")  # the student's error preserved: what the Auditor wants
 
 
+def test_consistency_features_and_rules():
+    import numpy as np
+    import pandas as pd
+    from consistency import allowed_mask, consistency_features, decide, page_numbers
+    page = "$R = 54$ ohm and $V = 108$ so $I = 108 / 59 = 2$ then $P = 54 \\cdot 2$"
+    nums = page_numbers(page)
+    i59 = next(i for i, v in nums if v == 59.0)
+    df = pd.DataFrame([{"page": "p", "i": i59, "best": "54", "text": "59"},
+                       {"page": "p", "i": i59, "best": "58", "text": "59"}])
+    f = consistency_features(df, {"p": page})
+    assert f.loc[0, "best_elsewhere"] == 2 and f.loc[0, "written_elsewhere"] == 0 and f.loc[0, "best_later"] == 1
+    assert f.loc[1, "best_elsewhere"] == 0
+    assert list(allowed_mask("required", f)) == [True, False] and list(allowed_mask("veto", f)) == [True, True]
+    # decisions: the main rule never changes a number whose challenger is not elsewhere on the page
+    rows = []
+    for k in range(80):
+        good = k % 4 == 0
+        rows.append({"page": "p", "student": f"s{(k // 4) % 4}", "i": i59, "text": "59", "best": "54" if good else "58",
+                     "gold": "54" if good else "59", "misread": int(good), "p_change": 0.99 if good else 0.6,
+                     "consistent": True, "p_blank": 0.1, "cand_is_key": False, "orig_is_key": False})
+    d2 = pd.DataFrame(rows)
+    f2 = consistency_features(d2, {"p": page})
+    act, _ = decide(d2, f2, np.array([k % 4 for k in range(80)]), "required", 0.01)
+    assert all(a == "keep" for a, b in zip(act, d2["best"]) if b == "58") and any(a == "change" for a in act)
+
+
+def test_edu_silent_categories():
+    import pandas as pd
+    from edu_silent import categorise
+    lab = pd.DataFrame([
+        {"page": "H|s1|3_6-1", "type": "num", "op": "sub", "raw": "70", "gold_raw": "72", "misread": 1},  # toward key
+        {"page": "H|s1|3_6-1", "type": "num", "op": "sub", "raw": "13", "gold_raw": "12", "misread": 1},  # away from key
+        {"page": "H|s1|3_6-1", "type": "num", "op": "sub", "raw": "9", "gold_raw": "8", "misread": 1},    # neither
+        {"page": "H|s1|3_6-1", "type": "num", "op": "match", "raw": "70", "gold_raw": "", "misread": 0},
+        {"page": "H|s1|3_6-1", "type": "num", "op": "ins", "raw": "5", "gold_raw": "", "misread": 0}])
+    df = categorise(lab, {"3_6-1": {70.0, 12.0}})
+    assert list(df["category"]) == ["toward_key", "away_key", "other", "ok"]
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_"):

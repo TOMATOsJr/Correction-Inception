@@ -259,9 +259,13 @@ def cmd_detect(a):
         if y[~te].sum():
             p[te] = LogReg(1.0).fit(X[~te], y[~te]).predict(X[te])
     df["p_flag"] = p
-    flagged = df.sort_values("p_flag", ascending=False, kind="stable").groupby("page", sort=False).head(a.k)
+    # which numbers the fix step checks: the learned detector, or the blank-image signal alone (a silently corrected
+    # number is as predictable without the page as with it: small nll_blank - nll), which worked better on FERMAT
+    rank_col = {"learned": "p_flag", "blank": "neg_blank_minus_page", "doubt": "dent"}[a.select]
+    df["neg_blank_minus_page"] = -df["blank_minus_page"]
+    flagged = df.sort_values(rank_col, ascending=False, kind="stable").groupby("page", sort=False).head(a.k)
     flagged.to_csv(out / "flagged.csv", index=False)
-    met = {"numbers": len(df), "by_kind": df["kind"].value_counts().to_dict(), "k_per_sample": a.k,
+    met = {"numbers": len(df), "by_kind": df["kind"].value_counts().to_dict(), "k_per_sample": a.k, "select": a.select,
            "flagged": len(flagged)}
     for kind in ("silent", "misread"):
         m = df["kind"].isin([kind, "ok"])
@@ -392,7 +396,16 @@ def cmd_decide(a):
     met = {"samples": int(df["page"].nunique()), "taus": res["taus"],
            "evidence_auroc": evidence_aurocs(X, res["good"], res["score"]),
            "weights_all_data (standardised features)": weights(X, res["good"])}
-    for rule in ("net", "budget"):
+    # the simple rule of correct.py (checker probability + both orders + guards, threshold per fold for <= 1% false
+    # changes), which beat the learned Arbiter on EDU
+    from correct import actions as simple_actions, pick_tau
+    simple = np.full(len(df), "keep", dtype=object)
+    for f in np.unique(folds):
+        te = folds == f
+        t = pick_tau(df[~te], 0.35, 0.15, a.max_false_change)
+        simple[te] = simple_actions(df[te], t, 0.35, 0.15)
+    res["actions"]["simple"] = np.where(simple == CHANGE, CHANGE, "keep")
+    for rule in ("simple", "net", "budget"):
         act = res["actions"][rule]
         ch = act == CHANGE
         m = summary(df, act, res["good"], res["wrong"], res["broken"], int(labels["misread"].sum()))
@@ -423,7 +436,8 @@ def cmd_decide(a):
         m["silent_correction_rate_after_percent"] = round(100 * float(np.mean(rev_a)), 2) if rev_a else None
         met[rule] = m
     (out / "audit_metrics.json").write_text(json.dumps(met, indent=2))
-    df[["page", "student", "i", "kind"]].assign(score=np.round(res["score"], 5), action=res["actions"]["net"]).to_csv(
+    df[["page", "student", "i", "kind"]].assign(score=np.round(res["score"], 5), action=res["actions"]["simple"],
+                                                action_net=res["actions"]["net"]).to_csv(
         out / "decisions.csv", index=False)
     print(json.dumps(met, indent=2))
 
@@ -445,6 +459,8 @@ def main():
         s.add_argument("--max-pixels", type=int, default=768 * 28 * 28)
         s.add_argument("--max-answer-tokens", type=int, default=2048)
         s.add_argument("--k", type=int, default=4, help="detect: numbers checked per sample")
+        s.add_argument("--select", choices=["learned", "blank", "doubt"], default="learned",
+                       help="detect: rank numbers by the learned detector, the blank-image signal, or digit doubt")
         s.add_argument("--beams", type=int, default=6)
         s.add_argument("--keep", type=int, default=4)
         s.add_argument("--max-cands", type=int, default=4)
