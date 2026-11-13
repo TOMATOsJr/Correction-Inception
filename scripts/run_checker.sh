@@ -410,7 +410,12 @@ if has agents; then
   # one 7B copy on GPU 0: loading a copy per GPU in parallel threads failed on Ada ("CUDA driver error: operation not
   # permitted" in the allocator warm-up); the earlier agent runs also pinned it (HF_TEXT_DEVICES=0)
   export HF_TEXT_DEVICES="${HF_TEXT_DEVICES:-0}"
-  python src/agents/ledger_agents.py --dir "$run" --target-root "$QWEN_ROOT" --edu-data "$EDU" \
+  # the 7B (~15 GB) does not fit in the home folder: node-local /scratch unless HF_HOME / LMA_AGENTS_HF_HOME is set
+  # (only for this stage, so the reader stages keep using the 3B already in the home cache)
+  AHF="${LMA_AGENTS_HF_HOME:-${HF_HOME:-}}"
+  if [ -z "$AHF" ] && [ -d /scratch ]; then AHF="/scratch/$USER/hf_cache"; mkdir -p "$AHF"; fi
+  echo "=== agents: $run | 7B cache: ${AHF:-default}"
+  HF_HOME="${AHF:-${HF_HOME:-$HOME/.cache/huggingface}}" python src/agents/ledger_agents.py --dir "$run" --target-root "$QWEN_ROOT" --edu-data "$EDU" \
     --llm hf-text:Qwen/Qwen2.5-7B-Instruct --workers "${LMA_AGENTS_WORKERS:-16}" $alim
   tag="${run##*/correct_}"
   for v in none corrected; do
