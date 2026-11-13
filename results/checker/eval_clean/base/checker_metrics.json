@@ -1,0 +1,19 @@
+{
+  "tag": "base",
+  "adapter": null,
+  "seconds": 3132,
+  "by_kind": {
+    "fermat/lookalike": {
+      "pairs": 400,
+      "accuracy": 0.94,
+      "both_orders": 0.8525,
+      "mean_p": 0.6861
+    },
+    "fermat/silent": {
+      "pairs": 382,
+      "accuracy": 0.822,
+      "both_orders": 0.6623,
+      "mean_p": 0.6301
+    }
+  }
+}

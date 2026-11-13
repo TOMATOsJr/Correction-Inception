@@ -1,0 +1,16 @@
+{
+  "fermat": {
+    "train": {
+      "lookalike": 6040,
+      "silent": 2836
+    },
+    "dev": {
+      "lookalike": 964,
+      "silent": 424
+    },
+    "test": {
+      "lookalike": 1630,
+      "silent": 764
+    }
+  }
+}

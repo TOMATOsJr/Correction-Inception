@@ -1,0 +1,46 @@
+{
+  "numbers": 8552,
+  "by_kind": {
+    "ok": 8452,
+    "misread": 69,
+    "silent": 31
+  },
+  "k_per_sample": 4,
+  "flagged": 1618,
+  "auroc_silent_vs_ok": {
+    "learned_detector": 0.8698,
+    "nll": 0.8851,
+    "neg_gap": 0.8848,
+    "ent": 0.878,
+    "dent": 0.9269,
+    "nll_blank": 0.4447,
+    "neg_gap_blank": 0.4407,
+    "dent_blank": 0.4556,
+    "blank_minus_page": 0.1291,
+    "after_equals": 0.463,
+    "repeats": 0.3606,
+    "n_digits": 0.5289,
+    "pos": 0.6866,
+    "is_last": 0.5729
+  },
+  "silent_caught_in_top_k": 23,
+  "silent_total": 31,
+  "auroc_misread_vs_ok": {
+    "learned_detector": 0.725,
+    "nll": 0.8816,
+    "neg_gap": 0.8816,
+    "ent": 0.8655,
+    "dent": 0.8863,
+    "nll_blank": 0.6408,
+    "neg_gap_blank": 0.6371,
+    "dent_blank": 0.6174,
+    "blank_minus_page": 0.3677,
+    "after_equals": 0.467,
+    "repeats": 0.4296,
+    "n_digits": 0.5735,
+    "pos": 0.5201,
+    "is_last": 0.4907
+  },
+  "misread_caught_in_top_k": 34,
+  "misread_total": 69
+}

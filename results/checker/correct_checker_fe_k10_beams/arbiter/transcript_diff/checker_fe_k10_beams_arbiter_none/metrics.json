@@ -1,0 +1,16 @@
+{
+  "name": "checker_fe_k10_beams_arbiter_none",
+  "n_samples": 287,
+  "missing_target": 6,
+  "number_error_sample_rate_percent": 91.64,
+  "number_error_95CI": [
+    86.55,
+    96.09
+  ],
+  "mean_number_mismatches": 12.958,
+  "mean_token_error_rate": 0.4654,
+  "token_error_rate_95CI": [
+    0.4014,
+    0.5505
+  ]
+}

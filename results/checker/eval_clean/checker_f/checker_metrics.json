@@ -1,0 +1,19 @@
+{
+  "tag": "checker_f",
+  "adapter": "results/checker/checker_f",
+  "seconds": 3325,
+  "by_kind": {
+    "fermat/lookalike": {
+      "pairs": 400,
+      "accuracy": 1.0,
+      "both_orders": 0.995,
+      "mean_p": 0.9976
+    },
+    "fermat/silent": {
+      "pairs": 382,
+      "accuracy": 0.9791,
+      "both_orders": 0.9738,
+      "mean_p": 0.979
+    }
+  }
+}

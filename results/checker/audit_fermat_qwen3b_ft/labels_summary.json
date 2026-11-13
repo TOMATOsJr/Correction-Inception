@@ -1,0 +1,11 @@
+{
+  "samples": 425,
+  "numbers": 8916,
+  "kinds": {
+    "ok": 8841,
+    "misread": 57,
+    "silent": 18
+  },
+  "error_spot_numbers": 369,
+  "silent_share_of_error_spots": 0.0488
+}

@@ -1,0 +1,19 @@
+{
+  "tag": "reader",
+  "adapter": "local_results/results/reader_lora",
+  "seconds": 3265,
+  "by_kind": {
+    "fermat/lookalike": {
+      "pairs": 400,
+      "accuracy": 0.96,
+      "both_orders": 0.8325,
+      "mean_p": 0.6916
+    },
+    "fermat/silent": {
+      "pairs": 382,
+      "accuracy": 0.8691,
+      "both_orders": 0.7016,
+      "mean_p": 0.6706
+    }
+  }
+}

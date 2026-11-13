@@ -23,3 +23,45 @@ Success = more *Fixed* than *Correct numbers broken* + *Changed to another wrong
 | checker_fe | 569 | 106 | 34% | – | **5** | 0 | **3** | 304 → 302 | 12.958 → 12.951 |
 | checker_fe_k10_beams | 1826 | 206 | 69% | 69% | **10** | 2 | **7** | 304 → 301 | 12.958 → 12.951 |
 | reader | 569 | 106 | 34% | – | **2** | 1 | **4** | 304 → 306 | 12.958 → 12.965 |
+
+
+## 3. FERMAT pairs without the red error markers
+
+The first FERMAT pairs kept FERMAT's `\textcolor{red}{..}` error markers in the shown line (46% of the silent test pairs had one right at [?]), a shortcut. Same models, markers removed (and many more silent pairs, since the markers had also broken the alignment):
+
+| Pairs | base | reader | checker_f | checker_fe |
+|---|---|---|---|---|
+| FERMAT wrong value: keeps the written one | 82.2% (66% both orders, n=382) | 86.9% (70% both orders, n=382) | 97.9% (97% both orders, n=382) | 94.5% (93% both orders, n=382) |
+| FERMAT correct number: keeps it | 94.0% (85% both orders, n=400) | 96.0% (83% both orders, n=400) | 100.0% (100% both orders, n=400) | 99.0% (99% both orders, n=400) |
+
+
+## 4. Learned Arbiter: all tool evidence combined (unseen students)
+
+Checker probability and margin, order agreement, blank-image probability, beam rank and probability, reader doubt, edit shape and answer-key flags in one logistic model, trained on other students. *net*: threshold with the most net fixes on the training students (no change unless positive); *budget*: at most 1% of correct numbers changed.
+
+| Run | Rule | Fixable (true value offered) | Fixed | Changed to another wrong value | Correct broken | Net | Misreads before → after | Arbiter AUROC | Checker alone AUROC |
+|---|---|---|---|---|---|---|---|---|---|
+| checker_fe | net | 28 | **0** | 0 | 0 | **+0** | 304 → 304 | 0.8475 | 0.8604 |
+| checker_fe | budget | 28 | **4** | 1 | 4 | **-1** | 304 → 304 | 0.8475 | 0.8604 |
+| checker_fe_k10_beams | net | 97 | **6** | 3 | 12 | **-9** | 304 → 310 | 0.8681 | 0.8342 |
+| checker_fe_k10_beams | budget | 97 | **19** | 4 | 17 | **-2** | 304 → 302 | 0.8681 | 0.8342 |
+| reader | net | 29 | **0** | 0 | 0 | **+0** | 304 → 304 | 0.8876 | 0.8108 |
+| reader | budget | 29 | **3** | 0 | 3 | **+0** | 304 → 304 | 0.8876 | 0.8108 |
+
+
+## 5. The Auditor on FERMAT (silent corrections, exact labels)
+
+Whole answers (FERMAT test). The old numbers left the red error markers in the written text, so preserved errors counted as silent corrections:
+
+| Reader | Silent correction (old) | Silent correction (markers stripped) | Token error (old) | Token error (stripped) |
+|---|---|---|---|---|
+| qwen3b_base | 82.5% | **22.22%** | 35.83% | **34.86%** |
+| qwen3b_ft | 76.32% | **14.04%** | 16.47% | **8.49%** |
+
+**qwen3b_base**: 8552 numbers, {'ok': 8452, 'misread': 69, 'silent': 31}; planted-error spots 353, silently corrected 8.8%.
+- silent vs ok: learned detector AUROC **0.8698**; strongest single signals dent 0.9269, nll 0.8851, neg_gap 0.8848; caught in the top 4 per answer: 23 of 31
+- misread vs ok: learned detector AUROC **0.725**; strongest single signals dent 0.8863, nll 0.8816, neg_gap 0.8816; caught in the top 4 per answer: 34 of 69
+
+**qwen3b_ft**: 8916 numbers, {'ok': 8841, 'misread': 57, 'silent': 18}; planted-error spots 369, silently corrected 4.9%.
+- silent vs ok: learned detector AUROC **0.7518**; strongest single signals blank_minus_page 0.0838, dent 0.9042, neg_gap 0.8724; caught in the top 4 per answer: 12 of 18
+- misread vs ok: learned detector AUROC **0.7437**; strongest single signals dent 0.8773, nll 0.8665, neg_gap 0.8664; caught in the top 4 per answer: 31 of 57

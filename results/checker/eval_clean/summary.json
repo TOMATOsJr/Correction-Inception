@@ -1,0 +1,58 @@
+{
+  "base": {
+    "fermat/lookalike": {
+      "pairs": 400,
+      "accuracy": 0.94,
+      "both_orders": 0.8525,
+      "mean_p": 0.6861
+    },
+    "fermat/silent": {
+      "pairs": 382,
+      "accuracy": 0.822,
+      "both_orders": 0.6623,
+      "mean_p": 0.6301
+    }
+  },
+  "reader": {
+    "fermat/lookalike": {
+      "pairs": 400,
+      "accuracy": 0.96,
+      "both_orders": 0.8325,
+      "mean_p": 0.6916
+    },
+    "fermat/silent": {
+      "pairs": 382,
+      "accuracy": 0.8691,
+      "both_orders": 0.7016,
+      "mean_p": 0.6706
+    }
+  },
+  "checker_fe": {
+    "fermat/lookalike": {
+      "pairs": 400,
+      "accuracy": 0.99,
+      "both_orders": 0.9875,
+      "mean_p": 0.9902
+    },
+    "fermat/silent": {
+      "pairs": 382,
+      "accuracy": 0.945,
+      "both_orders": 0.9319,
+      "mean_p": 0.9417
+    }
+  },
+  "checker_f": {
+    "fermat/lookalike": {
+      "pairs": 400,
+      "accuracy": 1.0,
+      "both_orders": 0.995,
+      "mean_p": 0.9976
+    },
+    "fermat/silent": {
+      "pairs": 382,
+      "accuracy": 0.9791,
+      "both_orders": 0.9738,
+      "mean_p": 0.979
+    }
+  }
+}

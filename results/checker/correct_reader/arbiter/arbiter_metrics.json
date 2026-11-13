@@ -1,0 +1,84 @@
+{
+  "folds": 4,
+  "taus": {
+    "net": [
+      1.01,
+      0.8361,
+      0.557,
+      0.4793
+    ],
+    "budget": [
+      0.5857,
+      0.4594,
+      0.4306,
+      0.3751
+    ]
+  },
+  "net": {
+    "verified": 569,
+    "verified_misreads": 106,
+    "fixable": 29,
+    "auto_fixed": 0,
+    "auto_wrong_fix": 0,
+    "auto_broken_correct": 0,
+    "net_fixes": 0,
+    "false_change_rate": 0.0,
+    "misreads_before": 304,
+    "misreads_after_auto": 304
+  },
+  "budget": {
+    "verified": 569,
+    "verified_misreads": 106,
+    "fixable": 29,
+    "auto_fixed": 3,
+    "auto_wrong_fix": 0,
+    "auto_broken_correct": 3,
+    "net_fixes": 0,
+    "false_change_rate": 0.0065,
+    "misreads_before": 304,
+    "misreads_after_auto": 304
+  },
+  "evidence_auroc": {
+    "arbiter_heldout": 0.8876,
+    "single_evidence (direction-free)": {
+      "p_change": 0.8108,
+      "dent": 0.7469,
+      "margin": 0.7288,
+      "neg_gap": 0.7018,
+      "nll": 0.6982,
+      "blank_missing": 0.6749,
+      "p_second": 0.6746,
+      "p_blank": 0.6699,
+      "consistent": 0.6681,
+      "orig_is_key": 0.64,
+      "blank_gap": 0.6333,
+      "key_move": 0.5938,
+      "ent": 0.592,
+      "cand_is_key": 0.5447
+    }
+  },
+  "weights_all_data (standardised features)": {
+    "dent": 1.097,
+    "ent": -1.059,
+    "p_change": 0.879,
+    "margin": 0.78,
+    "p_second": 0.611,
+    "neg_gap": 0.57,
+    "orig_is_key": -0.426,
+    "cand_is_key": 0.34,
+    "nll": -0.329,
+    "consistent": -0.328,
+    "blank_missing": 0.32,
+    "p_blank": -0.136,
+    "key_move": 0.101,
+    "blank_gap": 0.041,
+    "n_cands": 0.0,
+    "in_beams": 0.0,
+    "beam_rank": 0.0,
+    "beam_p": 0.0,
+    "beam_p_top": 0.0,
+    "one_digit": 0.0,
+    "len_diff": 0.0,
+    "dot_change": 0.0
+  }
+}
