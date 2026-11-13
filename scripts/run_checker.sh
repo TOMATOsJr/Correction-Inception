@@ -407,6 +407,9 @@ if has agents; then
   run="$OUT/${LMA_AGENTS_RUN:-correct_checker_fe_k10_beams}"
   [ -d "$run" ] || { echo "no $run: run STAGES=scale first" >&2; exit 1; }
   alim=""; [ -n "${LMA_AGENTS_LIMIT:-${LMA_LIMIT:-}}" ] && alim="--limit ${LMA_AGENTS_LIMIT:-$LMA_LIMIT}"
+  # one 7B copy on GPU 0: loading a copy per GPU in parallel threads failed on Ada ("CUDA driver error: operation not
+  # permitted" in the allocator warm-up); the earlier agent runs also pinned it (HF_TEXT_DEVICES=0)
+  export HF_TEXT_DEVICES="${HF_TEXT_DEVICES:-0}"
   python src/agents/ledger_agents.py --dir "$run" --target-root "$QWEN_ROOT" --edu-data "$EDU" \
     --llm hf-text:Qwen/Qwen2.5-7B-Instruct --workers "${LMA_AGENTS_WORKERS:-16}" $alim
   tag="${run##*/correct_}"
