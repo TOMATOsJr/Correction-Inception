@@ -50,6 +50,7 @@ results/checker*/pairs_clean/*.jsonl
 # EDU silent corrections / consistency: per-number tables quote student work
 results/checker*/edu_silent/**/*.csv
 results/checker*/correct_*/consistency/*.csv
+results/checker*/correct_*/agents/*.jsonl
 results/checker*/**/*.log
 results/checker*/**/per_sample.csv
 # correction runs write the same per-number files as detection

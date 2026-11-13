@@ -146,6 +146,25 @@ def edu_silent_section(run: Path) -> str:
     return "\n".join(out)
 
 
+def agents_table(run: Path) -> str:
+    rows, notes = [], []
+    for f in sorted(run.glob("correct_*/agents/agents_metrics.json")):
+        m = json.loads(f.read_text())
+        tag = f.parent.parent.name[len("correct_"):]
+        for v in ("pipeline", "agents", "agents_filter", "advocate_only"):
+            if v in m:
+                r = m[v]
+                rows.append(f"| {tag} | {v} | **{r['auto_fixed']}** | {r['auto_wrong_fix']} | {r['auto_broken_correct']} | "
+                            f"**{r['net_fixes']:+d}** | {r['misreads_before']} → {r['misreads_after_auto']} |")
+        notes.append(f"{tag}: {m['pages']} pages, {m['claims']} claims ({m['claims_for_the_checked_value']} for the value "
+                     f"the checker examined, {m['claims_that_would_fix']} would fix), {m['claims_objected_by_auditor']} "
+                     f"objected to by the Auditor; tools and format: {m['tool_and_format_stats']}")
+    if not rows:
+        return ""
+    return ("| Run | Variant | Fixed | Changed to another wrong value | Correct broken | Net | Misreads before → after |\n"
+            "|---|---|---|---|---|---|---|\n" + "\n".join(rows) + "\n\n" + "\n".join(f"- {n}" for n in notes) + "\n")
+
+
 def audit_section(run: Path) -> str:
     root = Path(__file__).resolve().parents[2]
     out = []
@@ -241,6 +260,12 @@ def main():
                "Does the challenger (or the written value) appear elsewhere on the page? *required* is the main rule, "
                "fixed in advance: change only when the challenger does and the written value does not, plus the usual "
                "checker conditions and threshold (<= 1% of correct numbers changed on the other students).\n", cons]
+    ag = agents_table(run)
+    if ag:
+        md += ["\n## 8. Advocate and Auditor as tool-calling agents (unseen students)\n",
+               "*pipeline* = the same tools and rule without agents (what the agents must beat); *agents* = Advocate's "
+               "claims the Auditor did not object to, threshold tuned on the other students; *agents_filter* = the "
+               "pipeline's threshold, agents can only remove changes; *advocate_only* = no Auditor.\n", ag]
     es = edu_silent_section(run)
     if es:
         md += ["\n## 7. Silent corrections in the real exams (EDU, via the answer key)\n", es]

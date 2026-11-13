@@ -21,6 +21,7 @@
 #   edu_silent  (CPU) A2: EDU silent corrections via the answer key, our reader and Gemini
 #   edu_silent_blank (GPU) A2: blank-image scores of the EDU transcripts + the blank-image signal on them
 #   audit_fix   (GPU) A1: Auditor fixes on FERMAT, numbers chosen by the blank-image signal
+#   agents      (GPU) C1: Advocate + Auditor as tool-calling LLM agents over the flagged numbers, vs no agents
 #
 # Overrides (env vars):
 #   STAGES="test pairs train eval correct"
@@ -391,6 +392,24 @@ if has audit_fix; then
     if [ "$NGPU" -ge 2 ]; then pair_run "$c --shard 0/2" "$c --shard 1/2"; else eval "$c --device 0"; fi
   done
   python src/detect/fermat_audit.py decide --out "$ad"
+  python src/finetune/checker_table.py --eval "$OUT/eval" --correct "$OUT"
+fi
+# ---------------------------------------------------------------- agents (STAGES=agents; GPU, a few hours)
+# C1: Advocate and Auditor as tool-calling LLM agents (Qwen2.5-7B, 4-bit) over the ledger of flagged numbers of one
+# correction run; the tools answer from that run's evidence; a fixed rule decides. Compared with the same tools
+# without agents on the same unseen students. LMA_AGENTS_RUN=<correct_* folder name>, LMA_AGENTS_LIMIT=5 = quick test.
+if has agents; then
+  need_gpu
+  run="$OUT/${LMA_AGENTS_RUN:-correct_checker_fe_k10_beams}"
+  [ -d "$run" ] || { echo "no $run: run STAGES=scale first" >&2; exit 1; }
+  alim=""; [ -n "${LMA_AGENTS_LIMIT:-}" ] && alim="--limit $LMA_AGENTS_LIMIT"
+  python src/agents/ledger_agents.py --dir "$run" --target-root "$QWEN_ROOT" --edu-data "$EDU" \
+    --llm hf-text:Qwen/Qwen2.5-7B-Instruct --workers "${LMA_AGENTS_WORKERS:-16}" $alim
+  tag="${run##*/correct_}"
+  for v in none corrected; do
+    python src/eval/transcript_diff.py --data-root "$EDU" --target-root "$run/agents/Outputs/$v" \
+      --target-model-dir qwen3b_ft --name "${tag}_agents_$v" --out "$run/agents/transcript_diff" || true
+  done
   python src/finetune/checker_table.py --eval "$OUT/eval" --correct "$OUT"
 fi
 echo "=== done. Results: $OUT/CHECKER_RESULTS.md"
