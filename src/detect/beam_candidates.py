@@ -20,6 +20,7 @@ written value), beam_p (their sequence probabilities). verify_choice.py --beams 
 from __future__ import annotations
 
 import argparse
+from resume import has_rows
 import csv
 import json
 import math
@@ -210,7 +211,7 @@ def main():
     suffix = f".{a.shard.replace('/', 'of')}" if a.shard else ""
     out_path = d / f"beams{suffix}.csv"
     import pandas as pd
-    done = set(pd.read_csv(out_path)["page"]) if out_path.exists() else set()
+    done = set(pd.read_csv(out_path)["page"]) if has_rows(out_path) else set()
     a.limit, limit = None, a.limit
     todo = [j for j in jobs(a) if j[0] in by_page and j[0] not in done][:limit]
     print(f"{len(todo)} pages to beam-search ({len(done)} done before); width {a.beams}, keep {a.keep}")
@@ -219,11 +220,12 @@ def main():
     reader = BeamReader(TokenScorer(a.reader.split(":", 1)[-1], a.adapter, a.max_pixels, a.device), prompt,
                         a.beams, a.max_new_tokens, a.max_prefix_tokens)
     deadline = float(os.environ.get("LMA_DEADLINE", "0") or 0)
-    new = not out_path.exists()
+    new = not has_rows(out_path)
     with open(out_path, "a", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, FIELDS)
         if new:
             w.writeheader()
+            f.flush()
         for pid, md, img in tqdm(todo, desc="beams"):
             if deadline and time.time() > deadline:
                 print("time budget reached: stopping (re-run to continue)", file=sys.stderr)

@@ -33,6 +33,7 @@ The red error markers in pert_a are stripped first (fermat_data.strip_red); the 
 from __future__ import annotations
 
 import argparse
+from resume import has_rows
 import csv
 import hashlib
 import json
@@ -182,19 +183,20 @@ def cmd_score(a):
     samples = samples_of(out)
     suffix = f".{a.shard.replace('/', 'of')}" if a.shard else ""
     path = out / f"scores{suffix}.csv"
-    done = set(pd.read_csv(path, dtype={"page": str})["page"]) if path.exists() else set()
+    done = set(pd.read_csv(path, dtype={"page": str})["page"]) if has_rows(path) else set()
     pages = shard_of(sorted(set(labels["page"]), key=int), a.shard)
     todo = [p for p in pages if p not in done][: a.limit]
     print(f"{len(todo)} samples to score ({len(done)} done)")
     images = fermat_images(set(todo))
     scorer = TokenScorer(a.reader, a.adapter, a.max_pixels, a.device)
     by_page = {p: g for p, g in labels.groupby("page")}
-    new = not path.exists()
+    new = not has_rows(path)
     from tqdm import tqdm
     with open(path, "a", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, SCORE_FIELDS)
         if new:
             w.writeheader()
+            f.flush()
         for p in tqdm(todo, desc="scoring"):
             T, img = samples[p]["transcript"], images[p]
             page, _ = scorer.token_features(PROMPT, img, T, a.max_answer_tokens)
@@ -290,17 +292,18 @@ def cmd_beams(a):
     samples = samples_of(out)
     suffix = f".{a.shard.replace('/', 'of')}" if a.shard else ""
     path = out / f"beams{suffix}.csv"
-    done = set(pd.read_csv(path, dtype={"page": str})["page"]) if path.exists() else set()
+    done = set(pd.read_csv(path, dtype={"page": str})["page"]) if has_rows(path) else set()
     todo = [p for p in shard_of(sorted(set(flagged["page"]), key=int), a.shard) if p not in done][: a.limit]
     images = fermat_images(set(todo))
     reader = BeamReader(TokenScorer(a.reader, a.adapter, a.max_pixels, a.device), PROMPT, a.beams, 8, 2048)
     by_page = {p: g for p, g in flagged.groupby("page")}
-    new = not path.exists()
+    new = not has_rows(path)
     from tqdm import tqdm
     with open(path, "a", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, ["page", "i", "written", "beams", "beam_p"])
         if new:
             w.writeheader()
+            f.flush()
         for p in tqdm(todo, desc="beams"):
             T = samples[p]["transcript"]
             rows = []
@@ -333,17 +336,18 @@ def cmd_verify(a):
     samples = samples_of(out)
     suffix = f".{a.shard.replace('/', 'of')}" if a.shard else ""
     path = out / f"verify{suffix}.csv"
-    done = set(pd.read_csv(path, dtype={"page": str})["page"]) if path.exists() else set()
+    done = set(pd.read_csv(path, dtype={"page": str})["page"]) if has_rows(path) else set()
     todo = [p for p in shard_of(sorted(set(flagged["page"]), key=int), a.shard) if p not in done][: a.limit]
     images = fermat_images(set(todo))
     asker = ChoiceAsker(TokenScorer(a.reader, a.adapter, a.max_pixels, a.device))
     by_page = {p: g for p, g in flagged.groupby("page")}
-    new = not path.exists()
+    new = not has_rows(path)
     from tqdm import tqdm
     with open(path, "a", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, VERIFY_FIELDS)
         if new:
             w.writeheader()
+            f.flush()
         for p in tqdm(todo, desc="verifying"):
             T, img = samples[p]["transcript"], images[p]
             rows = []

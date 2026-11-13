@@ -23,6 +23,7 @@ The share of correct numbers that are key values is the base rate: "toward_key" 
 from __future__ import annotations
 
 import argparse
+from resume import has_rows
 import csv
 import json
 import os
@@ -123,18 +124,19 @@ def cmd_blank(a):
     out.mkdir(parents=True, exist_ok=True)
     suffix = f".{a.shard.replace('/', 'of')}" if a.shard else ""
     path = out / f"blank_scores{suffix}.csv"
-    done = set(pd.read_csv(path)["page"]) if path.exists() else set()
+    done = set(pd.read_csv(path)["page"]) if has_rows(path) else set()
     prompt = Path(a.prompt_file or Path(DEFAULT_EDU_REPO) / DEFAULT_PROMPT).read_text(encoding="utf-8").strip()
     prompt = prompt.replace("{problem_statement}", "")
     a.images = a.images or a.edu_data
     todo = [j for j in jobs(a) if j[0] not in done]
     print(f"{len(todo)} pages to score with a blank image ({len(done)} done)")
     scorer = TokenScorer(a.reader, a.adapter, a.max_pixels, a.device)
-    new = not path.exists()
+    new = not has_rows(path)
     with open(path, "a", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, ["page", "i", "nll_blank", "neg_gap_blank", "dent_blank"])
         if new:
             w.writeheader()
+            f.flush()
         for pid, md, img in tqdm(todo, desc="blank scoring"):
             answer = page_text(md)
             size = Image.open(img).size

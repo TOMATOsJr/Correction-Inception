@@ -30,6 +30,7 @@ Outputs verify.csv (one row per flagged number; no decision) and verify_metrics.
 from __future__ import annotations
 
 import argparse
+from resume import has_rows
 import json
 import os
 import re
@@ -209,10 +210,10 @@ def main():
     by_page = {pg: g for pg, g in flagged.groupby("page")}
     suffix = f".{a.shard.replace('/', 'of')}" if a.shard else ""
     out_path = d / f"verify{suffix}.csv"
-    if out_path.exists() and list(pd.read_csv(out_path, nrows=0).columns) != FIELDS:
+    if has_rows(out_path) and list(pd.read_csv(out_path, nrows=0).columns) != FIELDS:
         out_path.replace(out_path.with_name(out_path.name + ".stale"))
         print(f"{out_path} has old columns: moved to *.stale, verifying all pages again")
-    done = set(pd.read_csv(out_path)["page"]) if out_path.exists() else set()
+    done = set(pd.read_csv(out_path)["page"]) if has_rows(out_path) else set()
     a.limit, limit = None, a.limit  # limit counts verified pages, not all pages
     todo = [j for j in jobs(a) if j[0] in by_page and j[0] not in done][:limit]
     print(f"{len(todo)} pages to verify ({len(done)} done before)")
@@ -262,7 +263,7 @@ def main():
                          "best": dec["best"], "p_change": dec["p_change"], "consistent": dec["consistent"],
                          "p_blank": p_blank, "cand_is_key": bool(bv is not None and bv in keys[qid]),
                          "orig_is_key": bool(xv is not None and xv in keys[qid]), "propose": dec["propose"]})
-        pd.DataFrame(rows, columns=FIELDS).to_csv(out_path, mode="a", header=not out_path.exists(), index=False)
+        pd.DataFrame(rows, columns=FIELDS).to_csv(out_path, mode="a", header=not has_rows(out_path), index=False)
     res = pd.concat([pd.read_csv(f, dtype={"gold": str}) for f in sorted(d.glob("verify*.csv"))])
     m = metrics(res)
     (d / "verify_metrics.json").write_text(json.dumps(m, indent=2))
