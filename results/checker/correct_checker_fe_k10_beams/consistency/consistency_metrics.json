@@ -1,0 +1,83 @@
+{
+  "pages_found": 191,
+  "pages": 191,
+  "main_rule": "required",
+  "diagnostics": {
+    "fixing_changes": 97,
+    "bad_changes": 1729,
+    "patterns": {
+      "challenger elsewhere": {
+        "share_of_fixing_changes": 0.4742,
+        "share_of_bad_changes": 0.6339
+      },
+      "written elsewhere": {
+        "share_of_fixing_changes": 0.6392,
+        "share_of_bad_changes": 0.7461
+      },
+      "challenger elsewhere and written not": {
+        "share_of_fixing_changes": 0.1237,
+        "share_of_bad_changes": 0.1261
+      }
+    }
+  },
+  "simple": {
+    "tau_high_per_fold": [
+      0.98
+    ],
+    "verified": 1826,
+    "verified_misreads": 206,
+    "auto_fixed": 10,
+    "auto_wrong_fix": 2,
+    "auto_broken_correct": 7,
+    "kept_misreads": 194,
+    "false_change_rate": 0.0043,
+    "misreads_before": 304,
+    "misreads_after_auto": 301,
+    "net_fixes": 1
+  },
+  "required": {
+    "tau_high_per_fold": [
+      0.5
+    ],
+    "verified": 1826,
+    "verified_misreads": 206,
+    "auto_fixed": 3,
+    "auto_wrong_fix": 2,
+    "auto_broken_correct": 12,
+    "kept_misreads": 201,
+    "false_change_rate": 0.0074,
+    "misreads_before": 304,
+    "misreads_after_auto": 313,
+    "net_fixes": -11
+  },
+  "veto": {
+    "tau_high_per_fold": [
+      0.98
+    ],
+    "verified": 1826,
+    "verified_misreads": 206,
+    "auto_fixed": 8,
+    "auto_wrong_fix": 1,
+    "auto_broken_correct": 5,
+    "kept_misreads": 197,
+    "false_change_rate": 0.0031,
+    "misreads_before": 304,
+    "misreads_after_auto": 301,
+    "net_fixes": 2
+  },
+  "consistency_only": {
+    "tau_high_per_fold": [
+      0.5
+    ],
+    "verified": 1826,
+    "verified_misreads": 206,
+    "auto_fixed": 3,
+    "auto_wrong_fix": 2,
+    "auto_broken_correct": 12,
+    "kept_misreads": 201,
+    "false_change_rate": 0.0074,
+    "misreads_before": 304,
+    "misreads_after_auto": 313,
+    "net_fixes": -11
+  }
+}

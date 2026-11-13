@@ -1,0 +1,16 @@
+{
+  "name": "checker_fe_consistency_corrected",
+  "n_samples": 287,
+  "missing_target": 6,
+  "number_error_sample_rate_percent": 91.29,
+  "number_error_95CI": [
+    86.09,
+    95.93
+  ],
+  "mean_number_mismatches": 12.965,
+  "mean_token_error_rate": 0.4654,
+  "token_error_rate_95CI": [
+    0.4014,
+    0.5506
+  ]
+}

@@ -59,9 +59,60 @@ Whole answers (FERMAT test). The old numbers left the red error markers in the w
 | qwen3b_ft | 76.32% | **14.04%** | 16.47% | **8.49%** |
 
 **qwen3b_base**: 8552 numbers, {'ok': 8452, 'misread': 69, 'silent': 31}; planted-error spots 353, silently corrected 8.8%.
-- silent vs ok: learned detector AUROC **0.8698**; strongest single signals dent 0.9269, nll 0.8851, neg_gap 0.8848; caught in the top 4 per answer: 23 of 31
-- misread vs ok: learned detector AUROC **0.725**; strongest single signals dent 0.8863, nll 0.8816, neg_gap 0.8816; caught in the top 4 per answer: 34 of 69
+- silent vs ok: learned detector AUROC **0.8698**; strongest single signals (direction-free; *low* = smaller values mean the error) dent 0.927, nll 0.885, neg_gap 0.885; caught in the top 4 per answer: 23 of 31
+- misread vs ok: learned detector AUROC **0.725**; strongest single signals (direction-free; *low* = smaller values mean the error) dent 0.886, nll 0.882, neg_gap 0.882; caught in the top 4 per answer: 34 of 69
 
 **qwen3b_ft**: 8916 numbers, {'ok': 8841, 'misread': 57, 'silent': 18}; planted-error spots 369, silently corrected 4.9%.
-- silent vs ok: learned detector AUROC **0.7518**; strongest single signals blank_minus_page 0.0838, dent 0.9042, neg_gap 0.8724; caught in the top 4 per answer: 12 of 18
-- misread vs ok: learned detector AUROC **0.7437**; strongest single signals dent 0.8773, nll 0.8665, neg_gap 0.8664; caught in the top 4 per answer: 31 of 57
+- silent vs ok: learned detector AUROC **0.7518**; strongest single signals (direction-free; *low* = smaller values mean the error) blank_minus_page 0.916 (low), dent 0.904, neg_gap 0.872; caught in the top 4 per answer: 12 of 18
+- misread vs ok: learned detector AUROC **0.7437**; strongest single signals (direction-free; *low* = smaller values mean the error) dent 0.877, nll 0.867, neg_gap 0.866; caught in the top 4 per answer: 31 of 57
+
+**fix step, qwen3b_ft**: 8916 numbers, {'ok': 8841, 'misread': 57, 'silent': 18}; planted-error spots 369, silently corrected 4.9%.
+- silent vs ok: learned detector AUROC **0.7518**; strongest single signals (direction-free; *low* = smaller values mean the error) blank_minus_page 0.916 (low), dent 0.904, neg_gap 0.872; caught in the top 4 per answer: 16 of 18
+- misread vs ok: learned detector AUROC **0.7437**; strongest single signals (direction-free; *low* = smaller values mean the error) dent 0.877, nll 0.867, neg_gap 0.866; caught in the top 4 per answer: 24 of 57
+- fixes (simple rule): silent corrections 0 → 0 (true value offered for 0 of the 0 checked), misreads fixed 0, changed to another wrong value 0, correct numbers broken 2; answers silently corrected None% → None%
+- fixes (Arbiter, net rule): silent corrections 0 → 0 (true value offered for 0 of the 0 checked), misreads fixed 0, changed to another wrong value 0, correct numbers broken 0; answers silently corrected None% → None%
+
+
+## 6. Consistency with the student's own work (unseen students)
+
+Does the challenger (or the written value) appear elsewhere on the page? *required* is the main rule, fixed in advance: change only when the challenger does and the written value does not, plus the usual checker conditions and threshold (<= 1% of correct numbers changed on the other students).
+
+| Run | Rule | Fixed | Changed to another wrong value | Correct broken | Net | Misreads before → after | Wrong numbers per exam before → after |
+|---|---|---|---|---|---|---|---|
+| checker_fe | simple | **5** | 0 | 3 | **+2** | 304 → 302 |  |
+| checker_fe | required (main) | **1** | 0 | 2 | **-1** | 304 → 305 | 12.958 → 12.965 |
+| checker_fe | veto | **5** | 0 | 3 | **+2** | 304 → 302 |  |
+| checker_fe | consistency_only | **1** | 0 | 2 | **-1** | 304 → 305 |  |
+| checker_fe | *pattern share: fixing vs bad changes* | 0.2143 | | 0.1294 | | | |
+| checker_fe_k10_beams | simple | **10** | 2 | 7 | **+1** | 304 → 301 |  |
+| checker_fe_k10_beams | required (main) | **3** | 2 | 12 | **-11** | 304 → 313 | 12.958 → 13.007 |
+| checker_fe_k10_beams | veto | **8** | 1 | 5 | **+2** | 304 → 301 |  |
+| checker_fe_k10_beams | consistency_only | **3** | 2 | 12 | **-11** | 304 → 313 |  |
+| checker_fe_k10_beams | *pattern share: fixing vs bad changes* | 0.1237 | | 0.1261 | | | |
+| reader | simple | **2** | 1 | 4 | **-3** | 304 → 306 |  |
+| reader | required (main) | **0** | 0 | 1 | **-1** | 304 → 305 | 12.958 → 12.958 |
+| reader | veto | **1** | 1 | 3 | **-3** | 304 → 306 |  |
+| reader | consistency_only | **0** | 0 | 1 | **-1** | 304 → 305 |  |
+| reader | *pattern share: fixing vs bad changes* | 0.2414 | | 0.0981 | | | |
+
+
+## 8. Advocate and Auditor as tool-calling agents (unseen students)
+
+*pipeline* = the same tools and rule without agents (what the agents must beat); *agents* = Advocate's claims the Auditor did not object to, threshold tuned on the other students; *agents_filter* = the pipeline's threshold, agents can only remove changes; *advocate_only* = no Auditor.
+
+| Run | Variant | Fixed | Changed to another wrong value | Correct broken | Net | Misreads before → after |
+|---|---|---|---|---|---|---|
+| checker_fe_k10_beams | pipeline | **0** | 0 | 1 | **-1** | 2 → 3 |
+| checker_fe_k10_beams | agents | **0** | 0 | 0 | **+0** | 2 → 2 |
+| checker_fe_k10_beams | agents_filter | **0** | 0 | 0 | **+0** | 2 → 2 |
+| checker_fe_k10_beams | advocate_only | **0** | 0 | 0 | **+0** | 2 → 2 |
+
+- checker_fe_k10_beams: 2 pages, 2 claims (1 for the value the checker examined, 0 would fix), 2 objected to by the Auditor; tools and format: {'tool_checker': 7, 'tool_beams': 6, 'tool_page_count': 3, 'invalid_claims': 2, 'tool_blank': 2}
+
+
+## 7. Silent corrections in the real exams (EDU, via the answer key)
+
+**gemini25**: 10330 numbers on 290 pages, 117 misread. Of the misreads, **14 towards the answer key** (transcript shows a key value, the student wrote another: silent-correction-like), 23 away from it (costing marks), 80 neither. Base rate: 77.8% of correctly transcribed numbers are key values; transcript value in the key for 42.7% of misreads, written value for 50.4%.
+
+**qwen3b_ft**: 7690 numbers on 283 pages, 680 misread. Of the misreads, **89 towards the answer key** (transcript shows a key value, the student wrote another: silent-correction-like), 137 away from it (costing marks), 454 neither. Base rate: 79.1% of correctly transcribed numbers are key values; transcript value in the key for 56.0% of misreads, written value for 63.1%.
+- away_key_vs_ok (n=2 vs 83): blank_minus_page 0.9398, nll_blank 0.9398, nll 0.9277, dent 0.9759

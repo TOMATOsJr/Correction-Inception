@@ -1,0 +1,17 @@
+{
+  "name": "gemini25",
+  "pages": 290,
+  "numbers": 10330,
+  "numbers_on_pages_with_a_key": 10330,
+  "misreads": 117,
+  "categories": {
+    "ok": 10213,
+    "other": 80,
+    "away_key": 23,
+    "toward_key": 14
+  },
+  "base_rate_correct_numbers_in_key": 0.778,
+  "misreads_whose_transcript_value_is_in_key": 0.4274,
+  "misreads_whose_written_value_is_in_key": 0.5043,
+  "pages_with_toward_key": 11
+}

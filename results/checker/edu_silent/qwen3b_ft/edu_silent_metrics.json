@@ -1,0 +1,42 @@
+{
+  "name": "qwen3b_ft",
+  "pages": 283,
+  "numbers": 7690,
+  "numbers_on_pages_with_a_key": 7690,
+  "misreads": 680,
+  "categories": {
+    "ok": 7010,
+    "other": 454,
+    "away_key": 137,
+    "toward_key": 89
+  },
+  "base_rate_correct_numbers_in_key": 0.7909,
+  "misreads_whose_transcript_value_is_in_key": 0.5603,
+  "misreads_whose_written_value_is_in_key": 0.6309,
+  "pages_with_toward_key": 49,
+  "blank_image": {
+    "numbers_scored": 85,
+    "away_key_vs_ok (n=2 vs 83)": {
+      "blank_minus_page": {
+        "auroc": 0.9398,
+        "direction": "high",
+        "direction_free": 0.9398
+      },
+      "nll_blank": {
+        "auroc": 0.9398,
+        "direction": "high",
+        "direction_free": 0.9398
+      },
+      "nll": {
+        "auroc": 0.9277,
+        "direction": "high",
+        "direction_free": 0.9277
+      },
+      "dent": {
+        "auroc": 0.9759,
+        "direction": "high",
+        "direction_free": 0.9759
+      }
+    }
+  }
+}

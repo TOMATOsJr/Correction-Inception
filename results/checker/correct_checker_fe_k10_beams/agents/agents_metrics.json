@@ -1,0 +1,62 @@
+{
+  "pages": 2,
+  "claims": 2,
+  "claims_objected_by_auditor": 2,
+  "claims_for_the_checked_value": 1,
+  "tool_and_format_stats": {
+    "tool_checker": 7,
+    "tool_beams": 6,
+    "tool_page_count": 3,
+    "invalid_claims": 2,
+    "tool_blank": 2
+  },
+  "claims_that_would_fix": 0,
+  "pipeline": {
+    "verified": 20,
+    "verified_misreads": 2,
+    "auto_fixed": 0,
+    "auto_wrong_fix": 0,
+    "auto_broken_correct": 1,
+    "kept_misreads": 2,
+    "false_change_rate": 0.0556,
+    "misreads_before": 2,
+    "misreads_after_auto": 3,
+    "net_fixes": -1
+  },
+  "agents": {
+    "verified": 20,
+    "verified_misreads": 2,
+    "auto_fixed": 0,
+    "auto_wrong_fix": 0,
+    "auto_broken_correct": 0,
+    "kept_misreads": 2,
+    "false_change_rate": 0.0,
+    "misreads_before": 2,
+    "misreads_after_auto": 2,
+    "net_fixes": 0
+  },
+  "agents_filter": {
+    "verified": 20,
+    "verified_misreads": 2,
+    "auto_fixed": 0,
+    "auto_wrong_fix": 0,
+    "auto_broken_correct": 0,
+    "kept_misreads": 2,
+    "false_change_rate": 0.0,
+    "misreads_before": 2,
+    "misreads_after_auto": 2,
+    "net_fixes": 0
+  },
+  "advocate_only": {
+    "verified": 20,
+    "verified_misreads": 2,
+    "auto_fixed": 0,
+    "auto_wrong_fix": 0,
+    "auto_broken_correct": 0,
+    "kept_misreads": 2,
+    "false_change_rate": 0.0,
+    "misreads_before": 2,
+    "misreads_after_auto": 2,
+    "net_fixes": 0
+  }
+}
