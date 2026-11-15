@@ -61,7 +61,7 @@ Our goal is fairer grades, not a better OCR, and the system should be automatic,
 % ======================================================================
 \section{Literature Review}
 
-\paragraph{Handwritten STEM recognition and grading.} EDU-CIRCUIT-HW \citep{educircuit2026} provides expert-rectified transcripts, TA rubric grades and a judge-based error metric (SER/AEC) with a four-way taxonomy. We reuse its prompts and its released transcripts from six VLMs. The paper discusses but does not release a grade-impact measurement.
+\paragraph{Handwritten STEM recognition and grading.} EDU-CIRCUIT-HW \citep{educircuit2026} provides expert-rectified transcripts, TA rubric grades and a judge-based error metric (SER/AEC) with a four-way taxonomy. We reuse its prompts and released transcripts from six VLMs; it does not release a grade-impact measurement.
 
 \paragraph{Over-correction by VLMs.} FERMAT \citep{fermat2025} contains handwritten maths answers with planted errors (\tool{pert\_a} as written, \tool{orig\_a} correct) and shows that VLMs often ``fix'' student errors while transcribing, which is exactly our silent-correction failure.
 
@@ -69,7 +69,7 @@ Our goal is fairer grades, not a better OCR, and the system should be automatic,
 
 \paragraph{Self-correction, verification and debate.} Asking an LLM to revise its own output (our baseline B2) is unreliable without external feedback \citep{huang2024selfcorrect}. Debate-style setups route claims through opposing agents \citep{irving2018debate,du2024debate}. We keep the debate idea, but a rule-based or learned Arbiter decides from tool evidence, not an LLM.
 
-\paragraph{Uncertainty and tool use.} Token-level confidence is a standard signal for OCR and generation errors; we compute it by teacher forcing, so it also works for transcripts without released logits. Our second agent generation calls tools in a structured format \citep{schick2023toolformer}, so that claims rest on evidence rather than on the agent's own reading.
+\paragraph{Uncertainty and tool use.} We compute token confidence by teacher forcing, so it works for transcripts without released logits. Our second agent generation calls tools in a structured format \citep{schick2023toolformer}, so claims rest on evidence.
 
 \paragraph{LLM-as-judge.} Judge reliability varies \citep{zheng2023judge}. Our free Qwen-7B judge agreed with Gemini almost not at all ($\kappa=0.03$), so we replaced it with an exact maths-token comparison.
 
@@ -184,19 +184,17 @@ We fine-tuned Qwen2.5-VL-3B-Instruct with QLoRA on FERMAT to reproduce \tool{per
 \section{Experiment Runs}
 
 \begin{table*}[t]
-\centering\small
-\begin{tabularx}{\textwidth}{@{}lllY@{}}
+\centering\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{2.4cm}>{\raggedright\arraybackslash}p{2.8cm}>{\raggedright\arraybackslash}p{3.3cm}Y@{}}
 \toprule
-Run & Where & Branch & What \\
+Run & Hardware & Branch & What \\
 \midrule
-Paper reproduction & CPU & \tool{main} & SER/AEC for 6 VLMs from released verdicts \\
-Kaggle runs 1--2 & Kaggle T4 & \tool{main} & TCE of released transcripts; judge calibration \\
+Paper reproduction / Kaggle 1--2 & CPU / Kaggle T4 & \tool{main} & SER/AEC for 6 VLMs; TCE of released transcripts; judge calibration \\
 PC run & RTX 5070 Ti & \tool{main} & our reader (untuned and QLoRA); FERMAT eval \\
-Agent full run & 2$\times$2080 Ti (11\,GB) & \tool{agent\_interaction} & 214 exams, interactive agents, 5 variants \\
-Colab runs & Colab & \tool{colab-results} & 50-exam agent run; misread detection \\
-Misread detection & 2$\times$2080 Ti (11\,GB) & \tool{misread\_detection} & confidence AUROC per transcriber and reader \\
-Correction & 2$\times$2080 Ti (11\,GB) & \tool{forced\_choice} & selector, forced choice, guards; held-out students \\
-A/B checker & 2$\times$2080 Ti (11\,GB) & \tool{ab\_checker} & checker training and eval; correction at 3/10/20 numbers per page; Arbiter; consistency; Auditor on FERMAT and EDU; tool-calling agents \\
+Agents / Colab & 2$\times$2080 Ti (11\,GB) / Colab & \tool{agent\_interaction}\newline\tool{colab-results} & 214-exam interactive agents, 5 variants; 50-exam run \\
+Detection / correction & 2$\times$2080 Ti (11\,GB) & \tool{misread\_detection}\newline\tool{forced\_choice} & confidence AUROC; selector, forced choice, guards on held-out students \\
+A/B checker & 2$\times$2080 Ti (11\,GB) & \tool{ab\_checker} & checker; correction at 3/10/20 per page; Arbiter; consistency; Auditor; tool-calling agents \\
 Ablation & 2$\times$2080 Ti (11\,GB), 3h23m & \tool{ablation-results} & 80 exams $\times$ 2 transcribers; ablations \#2, \#3, \#6, \#7, \#9, \#10, \#16 \\
 \bottomrule
 \end{tabularx}
@@ -387,22 +385,18 @@ Run & Pipeline (no agents) & Advocate + Auditor & Agents as filter only & Advoca
 
 \paragraph{Silent corrections in real exams.} If our reader silently corrected toward the right answer, misread transcript values would land on answer-key values more often than correctly read numbers do. They do not: 79.1\% of correctly read numbers are key values, but only 56.0\% of misread transcript values (written values: 63.1\%); Gemini shows the same pattern (77.8\%, 42.7\%, 50.4\%). Of our reader's misreads, 89 move toward the key and 137 away from it. The blank-image signal does not carry over: misreads toward the key vs.\ correct numbers score AUROC 0.53, against 0.92 on FERMAT.
 
-\paragraph{Earlier no-API ablations (Gemini 2.5).} An arithmetic-inconsistency flag has 50\% precision; a naive redundancy signal 3.6\%, worse than random (5\%); unit normalisation triples the checkable equalities (45\ra149).
 
 % ======================================================================
-\FloatBarrier
 \section{Evaluation and Analysis}
 \label{sec:eval}
 
 \paragraph{The 3B model is good enough to detect.} Fine-tuning makes the reader faithful: token error falls from 34.9\% to 8.5\% and silent corrections from 22.2\% to 14.0\% of answers, and on EDU, TCE falls from 32.9\% to 28.6\%. On top of it, detection is reliable for both error types: misreads at AUROC 0.75 (own transcripts) and 0.83 (Gemini's), silent corrections at 0.92, with 16 of 18 inside the 4 most suspicious numbers per answer. The fine-tuned checker also almost never changes a correct number (99.5\% kept vs.\ 90.2\%), so the system is safe to run.
 
-\paragraph{The 3B model is not good enough to correct.} Correction needs the model to say \emph{what} a doubtful digit is, and here it is close to chance: the fine-tuned checker picks the true value of an EDU misread 57\% of the time (base model 53\%), and the reader's own best alternative is right in only 14--28\% of misreads. Everything built on this judgement inherits the limit, as the rest of this section shows.
+\paragraph{The 3B model is not good enough to correct.} Correction needs the model to say \emph{what} a doubtful digit is, and here it is close to chance: the fine-tuned checker picks the true value of an EDU misread 57\% of the time (base model 53\%), and the reader's own best alternative is right in only 14--28\% of misreads. The true value is also among the candidates for only 34--69\% of misreads, and correct numbers far outnumber misreads among flagged ones (3,224 checked vs.\ 265 misreads at 20 per page), so every false change cancels a fix. This is a model limit, not a tool limit: everything built on the checker's judgement inherits it. The system defaults to keeping the transcript, so it is safe, but with a 3B reader at capped resolution it is a detector for a TA, not an automatic corrector.
 
 \paragraph{Why generation-1 agents had no effect.} The verifier can only check a claim that changes exactly one number, and most claims changed several numbers or rewrote a line: 83--89 of the 112--123 claims ruled on got no reading, 157 of 203 re-read attempts failed (qwen, interactive), and 653 of 757 failed in the 214-exam run. Without evidence the Arbiter escalates, so transcripts stay unchanged, and the verifier ablations cannot separate the variants.
 
 \paragraph{Generation 2 fixed the format but still loses to the pipeline.} Every claim is now checkable and tools are called correctly, but the agents choose worse than the fixed rule. The Advocate over-claims on numbers and values the checker never examined and drops most changes the pipeline would have made correctly. The Auditor is the useful half: its objections cut the Advocate's damage roughly in half ($-15$\ra$-7$, $-10$\ra$-4$), so adversarial communication helps, but only relative to an unchecked Advocate. As a filter on the pipeline, the agents remove good and bad changes alike.
-
-\paragraph{Why the correction tools are weak.} Detection works (AUROC 0.75--0.83 for misreads, 0.92 for FERMAT silent corrections). Correction is the bottleneck, and it is a model limit rather than a tool limit: the true value is among the candidates for only 34--69\% of misreads, the fine-tuned checker picks it only slightly above chance (57\%), and correct numbers far outnumber misreads among flagged numbers (3,224 checked vs.\ 265 misreads at 20 per page), so every false change cancels a fix. The system follows ``default to keep'': it is safe, but with a 3B reader at capped resolution it is a detector for a TA, not an automatic corrector.
 
 \paragraph{Did the architecture beat no architecture?} The fine-tuned reader and the detection built on it: yes, clearly. The correction layer on top: only within noise (+2 of 304 misreads on EDU, +2 numbers on FERMAT). TCE after correction was not re-measured for the checker runs; a net of 0 to +2 numbers cannot change it measurably given the grader's 6.7\% noise floor.
 
