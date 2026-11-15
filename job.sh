@@ -1,15 +1,15 @@
 #!/bin/bash
 #SBATCH -A research
-#SBATCH -J "checker"
+#SBATCH -J "ckA"
 #SBATCH -c 18
 #SBATCH --mem-per-cpu=2048
 #SBATCH -G 2
-#SBATCH -o "output.txt"
-#SBATCH -e "output.txt"
+#SBATCH -o "out_A.txt"
+#SBATCH -e "out_A.txt"
 #SBATCH --time="4-00:00:00"
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=prabhavsai.kollipara@research.iiit.ac.in
-#SBATCH -w gnode080
+#SBATCH -w gnode074
 
 # A/B checker: build pairs -> fine-tune -> measure -> correction with the checker (docs/CHECKER.md).
 #   LMA_SMOKE=1 sbatch job.sh               smoke test first (~20-30 min): results/checker_smoke

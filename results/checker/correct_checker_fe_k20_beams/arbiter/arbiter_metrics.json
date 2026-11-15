@@ -1,0 +1,90 @@
+{
+  "folds": 4,
+  "taus": {
+    "net": [
+      1.01,
+      1.01,
+      0.7005,
+      0.5171
+    ],
+    "budget": [
+      0.3301,
+      0.3887,
+      0.3752,
+      0.3717
+    ]
+  },
+  "net": {
+    "verified": 3224,
+    "verified_misreads": 265,
+    "fixable": 116,
+    "auto_fixed": 5,
+    "auto_wrong_fix": 2,
+    "auto_broken_correct": 9,
+    "net_fixes": -6,
+    "false_change_rate": 0.003,
+    "misreads_before": 304,
+    "misreads_after_auto": 308
+  },
+  "budget": {
+    "verified": 3224,
+    "verified_misreads": 265,
+    "fixable": 116,
+    "auto_fixed": 26,
+    "auto_wrong_fix": 8,
+    "auto_broken_correct": 28,
+    "net_fixes": -10,
+    "false_change_rate": 0.0095,
+    "misreads_before": 304,
+    "misreads_after_auto": 306
+  },
+  "evidence_auroc": {
+    "arbiter_heldout": 0.8544,
+    "single_evidence (direction-free)": {
+      "beam_p": 0.8638,
+      "beam_p_top": 0.8416,
+      "p_change": 0.8249,
+      "neg_gap": 0.8021,
+      "nll": 0.8008,
+      "dent": 0.8002,
+      "ent": 0.7842,
+      "margin": 0.762,
+      "blank_missing": 0.759,
+      "p_blank": 0.7566,
+      "p_second": 0.7484,
+      "blank_gap": 0.7029,
+      "beam_rank": 0.673,
+      "orig_is_key": 0.654,
+      "cand_is_key": 0.5774,
+      "key_move": 0.5493,
+      "one_digit": 0.5342,
+      "consistent": 0.5319,
+      "len_diff": 0.5142,
+      "dot_change": 0.5098
+    }
+  },
+  "weights_all_data (standardised features)": {
+    "beam_rank": -0.453,
+    "margin": 0.404,
+    "p_change": 0.39,
+    "beam_p": 0.386,
+    "ent": 0.321,
+    "orig_is_key": -0.306,
+    "nll": -0.278,
+    "blank_missing": 0.251,
+    "cand_is_key": -0.218,
+    "p_blank": 0.209,
+    "one_digit": 0.199,
+    "p_second": 0.18,
+    "key_move": 0.147,
+    "blank_gap": 0.124,
+    "dot_change": 0.101,
+    "beam_p_top": 0.09,
+    "consistent": -0.08,
+    "len_diff": -0.071,
+    "neg_gap": 0.042,
+    "dent": -0.019,
+    "n_cands": 0.0,
+    "in_beams": 0.0
+  }
+}

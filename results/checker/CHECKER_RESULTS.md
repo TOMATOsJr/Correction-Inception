@@ -22,6 +22,7 @@ Success = more *Fixed* than *Correct numbers broken* + *Changed to another wrong
 |---|---|---|---|---|---|---|---|---|---|
 | checker_fe | 569 | 106 | 34% | – | **5** | 0 | **3** | 304 → 302 | 12.958 → 12.951 |
 | checker_fe_k10_beams | 1826 | 206 | 69% | 69% | **10** | 2 | **7** | 304 → 301 | 12.958 → 12.951 |
+| checker_fe_k20_beams | 3224 | 265 | 66% | 66% | **13** | 2 | **11** | 304 → 302 | 12.958 → 12.965 |
 | reader | 569 | 106 | 34% | – | **2** | 1 | **4** | 304 → 306 | 12.958 → 12.965 |
 
 
@@ -45,6 +46,8 @@ Checker probability and margin, order agreement, blank-image probability, beam r
 | checker_fe | budget | 28 | **4** | 1 | 4 | **-1** | 304 → 304 | 0.8475 | 0.8604 |
 | checker_fe_k10_beams | net | 97 | **6** | 3 | 12 | **-9** | 304 → 310 | 0.8681 | 0.8342 |
 | checker_fe_k10_beams | budget | 97 | **19** | 4 | 17 | **-2** | 304 → 302 | 0.8681 | 0.8342 |
+| checker_fe_k20_beams | net | 116 | **5** | 2 | 9 | **-6** | 304 → 308 | 0.8544 | 0.8249 |
+| checker_fe_k20_beams | budget | 116 | **26** | 8 | 28 | **-10** | 304 → 306 | 0.8544 | 0.8249 |
 | reader | net | 29 | **0** | 0 | 0 | **+0** | 304 → 304 | 0.8876 | 0.8108 |
 | reader | budget | 29 | **3** | 0 | 3 | **+0** | 304 → 304 | 0.8876 | 0.8108 |
 
@@ -69,8 +72,8 @@ Whole answers (FERMAT test). The old numbers left the red error markers in the w
 **fix step, qwen3b_ft**: 8916 numbers, {'ok': 8841, 'misread': 57, 'silent': 18}; planted-error spots 369, silently corrected 4.9%.
 - silent vs ok: learned detector AUROC **0.7518**; strongest single signals (direction-free; *low* = smaller values mean the error) blank_minus_page 0.916 (low), dent 0.904, neg_gap 0.872; caught in the top 4 per answer: 16 of 18
 - misread vs ok: learned detector AUROC **0.7437**; strongest single signals (direction-free; *low* = smaller values mean the error) dent 0.877, nll 0.867, neg_gap 0.866; caught in the top 4 per answer: 24 of 57
-- fixes (simple rule): silent corrections 0 → 0 (true value offered for 0 of the 0 checked), misreads fixed 0, changed to another wrong value 0, correct numbers broken 2; answers silently corrected None% → None%
-- fixes (Arbiter, net rule): silent corrections 0 → 0 (true value offered for 0 of the 0 checked), misreads fixed 0, changed to another wrong value 0, correct numbers broken 0; answers silently corrected None% → None%
+- fixes (simple rule): silent corrections 18 → 18 (true value offered for 14 of the 16 checked), misreads fixed 0, changed to another wrong value 0, correct numbers broken 0; answers silently corrected 13.86% → 13.86%
+- fixes (Arbiter, net rule): silent corrections 18 → 14 (true value offered for 14 of the 16 checked), misreads fixed 2, changed to another wrong value 0, correct numbers broken 4; answers silently corrected 13.86% → 13.55%
 
 
 ## 6. Consistency with the student's own work (unseen students)
@@ -89,6 +92,11 @@ Does the challenger (or the written value) appear elsewhere on the page? *requir
 | checker_fe_k10_beams | veto | **8** | 1 | 5 | **+2** | 304 → 301 |  |
 | checker_fe_k10_beams | consistency_only | **3** | 2 | 12 | **-11** | 304 → 313 |  |
 | checker_fe_k10_beams | *pattern share: fixing vs bad changes* | 0.1237 | | 0.1261 | | | |
+| checker_fe_k20_beams | simple | **13** | 2 | 11 | **+0** | 304 → 302 |  |
+| checker_fe_k20_beams | required (main) | **4** | 2 | 14 | **-12** | 304 → 314 | 12.958 → 13.014 |
+| checker_fe_k20_beams | veto | **9** | 2 | 20 | **-13** | 304 → 315 |  |
+| checker_fe_k20_beams | consistency_only | **4** | 2 | 14 | **-12** | 304 → 314 |  |
+| checker_fe_k20_beams | *pattern share: fixing vs bad changes* | 0.1121 | | 0.0988 | | | |
 | reader | simple | **2** | 1 | 4 | **-3** | 304 → 306 |  |
 | reader | required (main) | **0** | 0 | 1 | **-1** | 304 → 305 | 12.958 → 12.958 |
 | reader | veto | **1** | 1 | 3 | **-3** | 304 → 306 |  |
@@ -102,12 +110,17 @@ Does the challenger (or the written value) appear elsewhere on the page? *requir
 
 | Run | Variant | Fixed | Changed to another wrong value | Correct broken | Net | Misreads before → after |
 |---|---|---|---|---|---|---|
-| checker_fe_k10_beams | pipeline | **0** | 0 | 1 | **-1** | 2 → 3 |
-| checker_fe_k10_beams | agents | **0** | 0 | 0 | **+0** | 2 → 2 |
-| checker_fe_k10_beams | agents_filter | **0** | 0 | 0 | **+0** | 2 → 2 |
-| checker_fe_k10_beams | advocate_only | **0** | 0 | 0 | **+0** | 2 → 2 |
+| checker_fe_k10_beams | pipeline | **10** | 2 | 7 | **+1** | 304 → 301 |
+| checker_fe_k10_beams | agents | **3** | 1 | 9 | **-7** | 304 → 310 |
+| checker_fe_k10_beams | agents_filter | **1** | 0 | 1 | **+0** | 304 → 304 |
+| checker_fe_k10_beams | advocate_only | **6** | 3 | 18 | **-15** | 304 → 316 |
+| checker_fe_k20_beams | pipeline | **13** | 2 | 11 | **+0** | 304 → 302 |
+| checker_fe_k20_beams | agents | **1** | 1 | 4 | **-4** | 304 → 307 |
+| checker_fe_k20_beams | agents_filter | **0** | 1 | 1 | **-2** | 304 → 305 |
+| checker_fe_k20_beams | advocate_only | **3** | 1 | 12 | **-10** | 304 → 313 |
 
-- checker_fe_k10_beams: 2 pages, 2 claims (1 for the value the checker examined, 0 would fix), 2 objected to by the Auditor; tools and format: {'tool_checker': 7, 'tool_beams': 6, 'tool_page_count': 3, 'invalid_claims': 2, 'tool_blank': 2}
+- checker_fe_k10_beams: 191 pages, 569 claims (189 for the value the checker examined, 14 would fix), 368 objected to by the Auditor; tools and format: {'tool_checker': 825, 'tool_beams': 490, 'tool_page_count': 421, 'invalid_claims': 164, 'tool_blank': 195, 'tool_answer_key': 82, 'invalid_tool_calls': 8}
+- checker_fe_k20_beams: 191 pages, 493 claims (145 for the value the checker examined, 8 would fix), 305 objected to by the Auditor; tools and format: {'tool_checker': 752, 'tool_beams': 473, 'tool_page_count': 398, 'tool_blank': 195, 'invalid_claims': 145, 'tool_answer_key': 73, 'invalid_tool_calls': 8, 'tool_errors': 1}
 
 
 ## 7. Silent corrections in the real exams (EDU, via the answer key)
@@ -115,4 +128,7 @@ Does the challenger (or the written value) appear elsewhere on the page? *requir
 **gemini25**: 10330 numbers on 290 pages, 117 misread. Of the misreads, **14 towards the answer key** (transcript shows a key value, the student wrote another: silent-correction-like), 23 away from it (costing marks), 80 neither. Base rate: 77.8% of correctly transcribed numbers are key values; transcript value in the key for 42.7% of misreads, written value for 50.4%.
 
 **qwen3b_ft**: 7690 numbers on 283 pages, 680 misread. Of the misreads, **89 towards the answer key** (transcript shows a key value, the student wrote another: silent-correction-like), 137 away from it (costing marks), 454 neither. Base rate: 79.1% of correctly transcribed numbers are key values; transcript value in the key for 56.0% of misreads, written value for 63.1%.
-- away_key_vs_ok (n=2 vs 83): blank_minus_page 0.9398, nll_blank 0.9398, nll 0.9277, dent 0.9759
+- toward_key_vs_ok (n=89 vs 7010): blank_minus_page 0.5303, nll_blank 0.5954, nll 0.6908, dent 0.7171
+- toward_key_vs_away_key (n=89 vs 137): blank_minus_page 0.638 (low), nll_blank 0.6743 (low), nll 0.646 (low), dent 0.6039 (low)
+- toward_key_vs_other (n=89 vs 454): blank_minus_page 0.5192 (low), nll_blank 0.5268 (low), nll 0.5342 (low), dent 0.5295 (low)
+- away_key_vs_ok (n=137 vs 7010): blank_minus_page 0.6703, nll_blank 0.7489, nll 0.8362, dent 0.8133

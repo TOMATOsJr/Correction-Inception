@@ -15,27 +15,93 @@
   "misreads_whose_written_value_is_in_key": 0.6309,
   "pages_with_toward_key": 49,
   "blank_image": {
-    "numbers_scored": 85,
-    "away_key_vs_ok (n=2 vs 83)": {
+    "numbers_scored": 7690,
+    "toward_key_vs_ok (n=89 vs 7010)": {
       "blank_minus_page": {
-        "auroc": 0.9398,
+        "auroc": 0.5303,
         "direction": "high",
-        "direction_free": 0.9398
+        "direction_free": 0.5303
       },
       "nll_blank": {
-        "auroc": 0.9398,
+        "auroc": 0.5954,
         "direction": "high",
-        "direction_free": 0.9398
+        "direction_free": 0.5954
       },
       "nll": {
-        "auroc": 0.9277,
+        "auroc": 0.6908,
         "direction": "high",
-        "direction_free": 0.9277
+        "direction_free": 0.6908
       },
       "dent": {
-        "auroc": 0.9759,
+        "auroc": 0.7171,
         "direction": "high",
-        "direction_free": 0.9759
+        "direction_free": 0.7171
+      }
+    },
+    "toward_key_vs_away_key (n=89 vs 137)": {
+      "blank_minus_page": {
+        "auroc": 0.362,
+        "direction": "low",
+        "direction_free": 0.638
+      },
+      "nll_blank": {
+        "auroc": 0.3257,
+        "direction": "low",
+        "direction_free": 0.6743
+      },
+      "nll": {
+        "auroc": 0.354,
+        "direction": "low",
+        "direction_free": 0.646
+      },
+      "dent": {
+        "auroc": 0.3961,
+        "direction": "low",
+        "direction_free": 0.6039
+      }
+    },
+    "toward_key_vs_other (n=89 vs 454)": {
+      "blank_minus_page": {
+        "auroc": 0.4808,
+        "direction": "low",
+        "direction_free": 0.5192
+      },
+      "nll_blank": {
+        "auroc": 0.4732,
+        "direction": "low",
+        "direction_free": 0.5268
+      },
+      "nll": {
+        "auroc": 0.4658,
+        "direction": "low",
+        "direction_free": 0.5342
+      },
+      "dent": {
+        "auroc": 0.4705,
+        "direction": "low",
+        "direction_free": 0.5295
+      }
+    },
+    "away_key_vs_ok (n=137 vs 7010)": {
+      "blank_minus_page": {
+        "auroc": 0.6703,
+        "direction": "high",
+        "direction_free": 0.6703
+      },
+      "nll_blank": {
+        "auroc": 0.7489,
+        "direction": "high",
+        "direction_free": 0.7489
+      },
+      "nll": {
+        "auroc": 0.8362,
+        "direction": "high",
+        "direction_free": 0.8362
+      },
+      "dent": {
+        "auroc": 0.8133,
+        "direction": "high",
+        "direction_free": 0.8133
       }
     }
   }

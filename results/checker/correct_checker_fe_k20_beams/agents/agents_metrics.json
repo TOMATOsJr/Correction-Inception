@@ -1,0 +1,65 @@
+{
+  "pages": 191,
+  "claims": 493,
+  "claims_objected_by_auditor": 305,
+  "claims_for_the_checked_value": 145,
+  "tool_and_format_stats": {
+    "tool_checker": 752,
+    "tool_beams": 473,
+    "tool_page_count": 398,
+    "tool_blank": 195,
+    "invalid_claims": 145,
+    "tool_answer_key": 73,
+    "invalid_tool_calls": 8,
+    "tool_errors": 1
+  },
+  "claims_that_would_fix": 8,
+  "pipeline": {
+    "verified": 3224,
+    "verified_misreads": 265,
+    "auto_fixed": 13,
+    "auto_wrong_fix": 2,
+    "auto_broken_correct": 11,
+    "kept_misreads": 250,
+    "false_change_rate": 0.0037,
+    "misreads_before": 304,
+    "misreads_after_auto": 302,
+    "net_fixes": 0
+  },
+  "agents": {
+    "verified": 3224,
+    "verified_misreads": 265,
+    "auto_fixed": 1,
+    "auto_wrong_fix": 1,
+    "auto_broken_correct": 4,
+    "kept_misreads": 263,
+    "false_change_rate": 0.0014,
+    "misreads_before": 304,
+    "misreads_after_auto": 307,
+    "net_fixes": -4
+  },
+  "agents_filter": {
+    "verified": 3224,
+    "verified_misreads": 265,
+    "auto_fixed": 0,
+    "auto_wrong_fix": 1,
+    "auto_broken_correct": 1,
+    "kept_misreads": 264,
+    "false_change_rate": 0.0003,
+    "misreads_before": 304,
+    "misreads_after_auto": 305,
+    "net_fixes": -2
+  },
+  "advocate_only": {
+    "verified": 3224,
+    "verified_misreads": 265,
+    "auto_fixed": 3,
+    "auto_wrong_fix": 1,
+    "auto_broken_correct": 12,
+    "kept_misreads": 261,
+    "false_change_rate": 0.0041,
+    "misreads_before": 304,
+    "misreads_after_auto": 313,
+    "net_fixes": -10
+  }
+}
