@@ -4,7 +4,7 @@ Detecting and verifying the transcription errors that change grades when AI grad
 
 **Team Dropouts:** Prabhav (2023115008), Jayant (2023115016), Saloni (2023115001), Sampath (2023102033). LMA Group Project 2026.
 
-**Final report:** [`docs/FINAL_REPORT.md`](docs/FINAL_REPORT.md) · **Repository:** https://github.com/TOMATOsJr/Correction-Inception
+**Final report:** [`docs/report/report.pdf`](docs/report/report.pdf) (ACL format; LaTeX source in `docs/report/`, Markdown version [`docs/FINAL_REPORT.md`](docs/FINAL_REPORT.md)) · **Repository:** https://github.com/TOMATOsJr/Correction-Inception
 
 AI grading of handwritten answers runs in two steps: a vision-language model (VLM) transcribes the page, then an LLM grades the transcript. Reading mistakes turn into wrong grades in two ways:
 - **misreads** cost students marks they earned;
