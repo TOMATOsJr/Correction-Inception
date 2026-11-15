@@ -5,7 +5,7 @@ Read this first in a new chat. Last updated **2026-10-25**.
 ## 1. Who / what / when
 * **Team "Dropouts":**
   * Prabhav 2023115008
-  * Jayant 2023115016
+  * Jayanth 2023115016
   * Saloni 2023115001
   * Sampath 2023102033 (the user)
 * **Project "Correction Inception"** (proposal accepted; PDF and LaTeX in `docs/proposal/`).

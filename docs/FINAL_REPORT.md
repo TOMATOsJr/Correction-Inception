@@ -1,6 +1,6 @@
 # Correction Inception: Detecting and Verifying Transcription Errors that Change Grades in AI Grading of Handwritten Exams
 
-**Team Dropouts:** Prabhav (2023115008), Jayant (2023115016), Saloni (2023115001), Sampath (2023102033). LMA Group Project 2026.
+**Team Dropouts:** Prabhav (2023115008), Jayanth (2023115016), Saloni (2023115001), Sampath (2023102033). LMA Group Project 2026.
 
 **Code:** https://github.com/TOMATOsJr/Correction-Inception. The [`README`](../README.md) on `main` explains how to reproduce every run and which branch holds which part.
 

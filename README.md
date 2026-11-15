@@ -2,7 +2,7 @@
 
 Detecting and verifying the transcription errors that change grades when AI grades handwritten exams.
 
-**Team Dropouts:** Prabhav (2023115008), Jayant (2023115016), Saloni (2023115001), Sampath (2023102033). LMA Group Project 2026.
+**Team Dropouts:** Prabhav (2023115008), Jayanth (2023115016), Saloni (2023115001), Sampath (2023102033). LMA Group Project 2026.
 
 **Final report:** [`docs/report/report.pdf`](docs/report/report.pdf) (ACL format; LaTeX source in `docs/report/`, Markdown version [`docs/FINAL_REPORT.md`](docs/FINAL_REPORT.md)) · **Repository:** https://github.com/TOMATOsJr/Correction-Inception
 
