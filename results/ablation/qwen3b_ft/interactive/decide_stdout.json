@@ -1,0 +1,86 @@
+{
+  "name": "interactive",
+  "protocol": "interactive (r1 -> tools -> r2 -> tools -> r3 -> decide)",
+  "theta": 0.85,
+  "tool_budget_per_agent": 4,
+  "counts": {
+    "samples": 55,
+    "advocate_escalate": 71,
+    "auditor_escalate": 35,
+    "advocate_reject": 5,
+    "auditor_reject": 1
+  },
+  "interaction": {
+    "filed_r1": 99,
+    "conflicts_after_r3": 22,
+    "rejected_actions": 109,
+    "filed_r2": 31,
+    "countered": 23,
+    "withdrawn": 15,
+    "revised": 2,
+    "stood": 5,
+    "conceded": 1,
+    "defended": 1
+  },
+  "tools": {
+    "crop_reread": 183,
+    "ok": 46,
+    "consistency": 20,
+    "failed": 157
+  },
+  "theta_sweep": {
+    "0.5": {
+      "escalate": 102,
+      "reject": 8,
+      "accept": 2
+    },
+    "0.6": {
+      "escalate": 102,
+      "reject": 8,
+      "accept": 2
+    },
+    "0.7": {
+      "escalate": 104,
+      "reject": 8
+    },
+    "0.8": {
+      "escalate": 106,
+      "reject": 6
+    },
+    "0.85": {
+      "escalate": 106,
+      "reject": 6
+    },
+    "0.9": {
+      "escalate": 106,
+      "reject": 6
+    },
+    "0.95": {
+      "escalate": 110,
+      "reject": 2
+    }
+  },
+  "claim_precision_vs_expert": {
+    "all_claims": {
+      "neutral": 89,
+      "hurts": 21,
+      "helps": 2,
+      "precision_percent": 8.7
+    },
+    "agents": {
+      "precision_percent": 0.0
+    },
+    "noverify": {
+      "neutral": 17,
+      "hurts": 21,
+      "helps": 2,
+      "precision_percent": 8.7
+    },
+    "advocate_only": {
+      "precision_percent": 0.0
+    },
+    "auditor_only": {
+      "precision_percent": 0.0
+    }
+  }
+}

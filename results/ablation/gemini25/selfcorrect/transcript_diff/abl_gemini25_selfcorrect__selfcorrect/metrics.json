@@ -1,0 +1,16 @@
+{
+  "name": "abl_gemini25_selfcorrect__selfcorrect",
+  "n_samples": 80,
+  "missing_target": 213,
+  "number_error_sample_rate_percent": 71.25,
+  "number_error_95CI": [
+    60.26,
+    81.71
+  ],
+  "mean_number_mismatches": 6.9,
+  "mean_token_error_rate": 0.1576,
+  "token_error_rate_95CI": [
+    0.1236,
+    0.1912
+  ]
+}

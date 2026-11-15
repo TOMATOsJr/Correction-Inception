@@ -1,0 +1,16 @@
+{
+  "name": "abl_qwen3b_ft_interactive__noverify",
+  "n_samples": 80,
+  "missing_target": 213,
+  "number_error_sample_rate_percent": 96.25,
+  "number_error_95CI": [
+    92.31,
+    100.0
+  ],
+  "mean_number_mismatches": 12.762,
+  "mean_token_error_rate": 0.455,
+  "token_error_rate_95CI": [
+    0.3833,
+    0.5291
+  ]
+}

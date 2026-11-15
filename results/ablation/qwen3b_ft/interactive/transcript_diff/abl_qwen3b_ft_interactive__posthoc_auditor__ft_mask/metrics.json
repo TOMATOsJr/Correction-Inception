@@ -1,0 +1,16 @@
+{
+  "name": "abl_qwen3b_ft_interactive__posthoc_auditor__ft_mask",
+  "n_samples": 80,
+  "missing_target": 213,
+  "number_error_sample_rate_percent": 92.5,
+  "number_error_95CI": [
+    84.62,
+    98.77
+  ],
+  "mean_number_mismatches": 12.5,
+  "mean_token_error_rate": 0.4534,
+  "token_error_rate_95CI": [
+    0.3817,
+    0.5281
+  ]
+}

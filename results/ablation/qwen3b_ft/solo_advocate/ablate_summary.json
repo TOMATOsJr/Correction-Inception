@@ -1,0 +1,155 @@
+{
+  "name": "solo_advocate",
+  "theta": 0.85,
+  "main_tag": "ft_mask",
+  "tags": [
+    "ft_mask"
+  ],
+  "exams": 80,
+  "claims": 57,
+  "configs": {
+    "consistency_only__ft_mask__t0.5": {
+      "escalate": 49,
+      "reject": 5,
+      "accept": 3,
+      "neutral": 2,
+      "hurts": 1,
+      "precision_percent": 0.0
+    },
+    "consistency_only__ft_mask__t0.6": {
+      "escalate": 49,
+      "reject": 5,
+      "accept": 3,
+      "neutral": 2,
+      "hurts": 1,
+      "precision_percent": 0.0
+    },
+    "consistency_only__ft_mask__t0.7": {
+      "escalate": 49,
+      "reject": 5,
+      "accept": 3,
+      "neutral": 2,
+      "hurts": 1,
+      "precision_percent": 0.0
+    },
+    "consistency_only__ft_mask__t0.8": {
+      "escalate": 49,
+      "reject": 5,
+      "accept": 3,
+      "neutral": 2,
+      "hurts": 1,
+      "precision_percent": 0.0
+    },
+    "consistency_only__ft_mask__t0.85": {
+      "escalate": 49,
+      "reject": 5,
+      "accept": 3,
+      "neutral": 2,
+      "hurts": 1,
+      "precision_percent": 0.0
+    },
+    "consistency_only__ft_mask__t0.9": {
+      "escalate": 49,
+      "reject": 5,
+      "accept": 3,
+      "neutral": 2,
+      "hurts": 1,
+      "precision_percent": 0.0
+    },
+    "consistency_only__ft_mask__t0.95": {
+      "escalate": 49,
+      "reject": 5,
+      "accept": 3,
+      "neutral": 2,
+      "hurts": 1,
+      "precision_percent": 0.0
+    },
+    "full__ft_mask__t0.5": {
+      "reject": 10,
+      "escalate": 47,
+      "precision_percent": null
+    },
+    "full__ft_mask__t0.6": {
+      "reject": 10,
+      "escalate": 47,
+      "precision_percent": null
+    },
+    "full__ft_mask__t0.7": {
+      "reject": 10,
+      "escalate": 47,
+      "precision_percent": null
+    },
+    "full__ft_mask__t0.8": {
+      "reject": 9,
+      "escalate": 48,
+      "precision_percent": null
+    },
+    "full__ft_mask__t0.85": {
+      "reject": 8,
+      "escalate": 49,
+      "precision_percent": null
+    },
+    "full__ft_mask__t0.9": {
+      "reject": 8,
+      "escalate": 49,
+      "precision_percent": null
+    },
+    "full__ft_mask__t0.95": {
+      "escalate": 55,
+      "reject": 2,
+      "precision_percent": null
+    },
+    "noverify": {
+      "accept": 26,
+      "neutral": 11,
+      "hurts": 15,
+      "precision_percent": 0.0
+    },
+    "reread_only__ft_mask__t0.5": {
+      "reject": 10,
+      "escalate": 47,
+      "precision_percent": null
+    },
+    "reread_only__ft_mask__t0.6": {
+      "reject": 10,
+      "escalate": 47,
+      "precision_percent": null
+    },
+    "reread_only__ft_mask__t0.7": {
+      "reject": 10,
+      "escalate": 47,
+      "precision_percent": null
+    },
+    "reread_only__ft_mask__t0.8": {
+      "reject": 9,
+      "escalate": 48,
+      "precision_percent": null
+    },
+    "reread_only__ft_mask__t0.85": {
+      "reject": 8,
+      "escalate": 49,
+      "precision_percent": null
+    },
+    "reread_only__ft_mask__t0.9": {
+      "reject": 8,
+      "escalate": 49,
+      "precision_percent": null
+    },
+    "reread_only__ft_mask__t0.95": {
+      "escalate": 55,
+      "reject": 2,
+      "precision_percent": null
+    }
+  },
+  "verifier": {
+    "ft_mask": {
+      "picked_span": 9,
+      "picked_unresolved": 5,
+      "no_reading": 43,
+      "evaluable": 6,
+      "correct": 6,
+      "mean_conf": 0.8545,
+      "accuracy_vs_expert_percent": 100.0
+    }
+  }
+}
